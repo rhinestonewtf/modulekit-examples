@@ -1,6 +1,6 @@
-## Awesome Modules
+## ModuleKit Examples
 
-Repositoty with example implementation for awesome module ideas build with [moduleKit](https://github.com/rhinestonewtf/modulekit)
+Repository with module examples built using the [ModuleKit](https://github.com/rhinestonewtf/modulekit)
 
 ## Dislaimer
 
