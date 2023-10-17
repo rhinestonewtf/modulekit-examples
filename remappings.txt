@@ -1,0 +1,14 @@
+@aa/=lib/modulekit/lib/account-abstraction/contracts/
+@openzeppelin/contracts-upgradeable/=lib/modulekit/lib/openzeppelin-contracts-upgradeable/contracts/
+@openzeppelin/contracts/=lib/modulekit/lib/openzeppelin-contracts/contracts/
+account-abstraction/=lib/modulekit/lib/account-abstraction/contracts/
+ds-test/=lib/forge-std/lib/ds-test/src/
+erc4626-tests/=lib/modulekit/lib/openzeppelin-contracts-upgradeable/lib/erc4626-tests/
+forge-std/=lib/forge-std/src/
+modulekit/=lib/modulekit/src/
+openzeppelin-contracts-upgradeable/=lib/modulekit/lib/openzeppelin-contracts-upgradeable/
+openzeppelin-contracts/=lib/modulekit/lib/openzeppelin-contracts/
+safe-contracts/=lib/modulekit/lib/safe-contracts/
+sentinellist/=lib/modulekit/lib/sentinellist/
+solady/=lib/modulekit/lib/solady/
+solmate/=lib/modulekit/lib/solmate/src/
