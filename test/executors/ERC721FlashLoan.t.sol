@@ -2,24 +2,40 @@
 
 pragma solidity ^0.8.19;
 
-import {Test} from "forge-std/Test.sol";
+import { Test } from "forge-std/Test.sol";
 import {
     RhinestoneModuleKit,
     RhinestoneModuleKitLib,
     RhinestoneAccount
 } from "modulekit/test/utils/safe-base/RhinestoneModuleKit.sol";
 
-import {MockERC20} from "solmate/test/utils/mocks/MockERC20.sol";
-import {MockERC721} from "solmate/test/utils/mocks/MockERC721.sol";
+import { MockERC20 } from "solmate/test/utils/mocks/MockERC20.sol";
+import { MockERC721 } from "solmate/test/utils/mocks/MockERC721.sol";
 
-import "../src/NFTFlashLoan/ERC721FlashLoan.sol";
-import "../src/NFTFlashLoan/interfaces/IERC3156FlashLender.sol";
-import "../src/NFTFlashLoan/interfaces/IERC3156FlashBorrower.sol";
+import {
+    FlashloanLenderModule,
+    IERC6682,
+    IERC20,
+    IERC721,
+    ExecutorAction,
+    ERC20ModuleKit,
+    ERC721ModuleKit,
+    CallbackParams,
+    IExecutorManager,
+    IERC3156FlashLender,
+    IERC3156FlashBorrower
+} from "../../src/executors/NFTFlashLoan/ERC721FlashLoan.sol";
 
 import "forge-std/console2.sol";
 
 contract TokenBorrower is IERC3156FlashBorrower {
-    function onFlashLoan(address lender, address token, uint256 tokenId, uint256 fee, bytes calldata data)
+    function onFlashLoan(
+        address lender,
+        address token,
+        uint256 tokenId,
+        uint256 fee,
+        bytes calldata data
+    )
         external
         override
         returns (bytes32)
@@ -32,7 +48,14 @@ contract TokenBorrower is IERC3156FlashBorrower {
         return keccak256("ERC3156FlashBorrower.onFlashLoan");
     }
 
-    function initLending(address lender, address manager, address token, uint256 tokenId) external {
+    function initLending(
+        address lender,
+        address manager,
+        address token,
+        uint256 tokenId
+    )
+        external
+    {
         IERC3156FlashLender(lender).flashLoan(
             IERC3156FlashBorrower(address(this)), token, tokenId, abi.encode(manager, bytes(""))
         );
@@ -184,7 +207,7 @@ contract ERC721FlashLoanTest is Test, RhinestoneModuleKit {
                 abi.encode(instanceLender.aux.executorManager, abi.encode(callbackParams))
             )
         );
-        instanceBorrower.exec4337({target: instanceLender.account, callData: callData});
+        instanceBorrower.exec4337({ target: instanceLender.account, callData: callData });
 
         // assertTrue(token.balanceOf(devFeeReceiver) > 0, "Dev fee should be greater than 0");
     }
