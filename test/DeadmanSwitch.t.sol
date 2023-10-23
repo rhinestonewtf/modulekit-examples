@@ -14,16 +14,21 @@ import { MockERC721 } from "solmate/test/utils/mocks/MockERC721.sol";
 
 import "../src/DeadmansSwitch/DeadmanSwitch.sol";
 import "modulekit/test/mocks/MockExecutor.sol";
+import "modulekit/test/mocks/MockRegistry.sol";
 
 import "forge-std/console2.sol";
+import "modulekit/core/ComposableCondition.sol";
 
-contract ERC721FlashLoanTest is Test, RhinestoneModuleKit {
+contract DeadmanSwitchTest is Test, RhinestoneModuleKit {
     using RhinestoneModuleKitLib for RhinestoneAccount; // <-- library that wraps smart account actions for easier testing
 
     MockExecutor mockExecutor;
     RhinestoneAccount instance; // <-- this is a rhinestone smart account instance
     address receiver;
     MockERC20 token;
+    MockRegistry registry;
+
+    ComposableConditionManager conditionManager;
 
     DeadmanSwitch dms;
 
@@ -31,12 +36,15 @@ contract ERC721FlashLoanTest is Test, RhinestoneModuleKit {
         // setting up receiver address. This is the EOA that this test is sending funds to
         receiver = makeAddr("receiver");
 
+        registry = new MockRegistry();
+        conditionManager = new ComposableConditionManager(registry);
+
         mockExecutor = new MockExecutor();
 
         // setting up mock executor and token
         token = new MockERC20("", "", 18);
 
-        dms = new DeadmanSwitch();
+        dms = new DeadmanSwitch(conditionManager);
 
         // create a new rhinestone account instance
         instance = makeRhinestoneAccount("1");
@@ -47,7 +55,7 @@ contract ERC721FlashLoanTest is Test, RhinestoneModuleKit {
         instance.addExecutor(address(mockExecutor));
     }
 
-    function activate_hook() internal {
+    function test_lastAccess__shouldUpdateLastAccess() internal {
         instance.addHook(address(dms));
         instance.addValidator(address(dms));
 
@@ -55,10 +63,13 @@ contract ERC721FlashLoanTest is Test, RhinestoneModuleKit {
 
         assertEq(token.balanceOf(receiver), 0);
         mockExecutor.exec(
-            instance.aux.executorManager, instance.account, address(token), receiver, 100
+            IExecutorManager(address(instance.aux.executorManager)),
+            instance.account,
+            address(token),
+            receiver,
+            100
         );
         assertEq(token.balanceOf(receiver), 100);
-
         uint256 lastExec = dms.lastAccess(instance.account);
         assertEq(lastExec, 16_000_000);
 

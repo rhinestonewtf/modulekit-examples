@@ -17,7 +17,7 @@ contract DeadmanSwitch is IHook, ICondition, ConditionalExecutor {
         address nominee;
     }
 
-    mapping(address account => DeadmanSwitchStorage) public lastAccess;
+    mapping(address account => DeadmanSwitchStorage) private _lastAccess;
 
     event Recovery(address account, address nominee);
 
@@ -29,10 +29,14 @@ contract DeadmanSwitch is IHook, ICondition, ConditionalExecutor {
 
     modifier onlyNominee(address account) {
         require(
-            lastAccess[account].nominee == msg.sender,
+            _lastAccess[account].nominee == msg.sender,
             "DeadmanSwitch: Only nominee can call this function"
         );
         _;
+    }
+
+    function lastAccess(address account) external view returns (uint256) {
+        return _lastAccess[account].lastAccess;
     }
 
     // IHook functions
@@ -46,7 +50,7 @@ contract DeadmanSwitch is IHook, ICondition, ConditionalExecutor {
         override
         returns (bytes memory)
     {
-        lastAccess[account].lastAccess = block.timestamp;
+        _lastAccess[account].lastAccess = block.timestamp;
     }
 
     // IHook functions
@@ -116,7 +120,7 @@ contract DeadmanSwitch is IHook, ICondition, ConditionalExecutor {
         returns (bool)
     {
         DeadmansSwitchParams memory params = abi.decode(conditions, (DeadmansSwitchParams));
-        return block.timestamp + params.timeout >= lastAccess[account].lastAccess;
+        return block.timestamp + params.timeout >= _lastAccess[account].lastAccess;
     }
 
     function supportsInterface(bytes4 interfaceID) external view override returns (bool) { }
