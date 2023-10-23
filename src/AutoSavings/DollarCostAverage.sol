@@ -45,6 +45,10 @@ contract DCA is ConditionalExecutor {
         );
     }
 
+    function setStrategy(uint256 strategyId, DCAStrategy calldata strategy) external {
+        _dca[msg.sender][strategyId] = strategy;
+    }
+
     function triggerDCA(
         address account,
         IExecutorManager manager,
