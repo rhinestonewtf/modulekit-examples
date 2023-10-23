@@ -105,6 +105,17 @@ contract DeadmanSwitchTest is Test, RhinestoneModuleKit {
             ExecutorTransaction({ actions: actions, nonce: 0, metadataHash: bytes32(0) });
 
         vm.prank(nominee);
+        vm.expectRevert();
+        dms.recover(
+            instance.account,
+            IExecutorManager(address(instance.aux.executorManager)),
+            recoveryActions,
+            conditions
+        );
+
+        vm.warp(16_000_002 + 365 days);
+
+        vm.prank(nominee);
         dms.recover(
             instance.account,
             IExecutorManager(address(instance.aux.executorManager)),

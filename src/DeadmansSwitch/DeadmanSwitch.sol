@@ -124,7 +124,7 @@ contract DeadmanSwitch is IHook, ICondition, ConditionalExecutor {
         returns (bool)
     {
         DeadmansSwitchParams memory params = abi.decode(conditions, (DeadmansSwitchParams));
-        return block.timestamp + params.timeout >= _lastAccess[account].lastAccess;
+        return block.timestamp >= _lastAccess[account].lastAccess + params.timeout;
     }
 
     function supportsInterface(bytes4 interfaceID) external view override returns (bool) { }
