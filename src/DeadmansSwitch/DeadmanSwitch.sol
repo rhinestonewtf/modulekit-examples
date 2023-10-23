@@ -2,57 +2,135 @@
 pragma solidity ^0.8.21;
 
 import "modulekit/modulekit/IHook.sol";
+import "modulekit/core/ComposableCondition.sol";
 import "modulekit/modulekit/IExecutor.sol";
 import "modulekit/modulekit/ValidatorBase.sol";
+import "modulekit/modulekit/ConditionalExecutorBase.sol";
 
-contract DeadmanSwitch is IHook, ICondition, IValidator {
-    mapping(address account => uint256 lastAccess) public lastAccess;
+struct DeadmansSwitchParams {
+    uint256 timeout;
+}
 
-    struct DeadmansSwitchParams {
-        uint256 timeout;
+contract DeadmanSwitch is IHook, ICondition, ConditionalExecutor {
+    struct DeadmanSwitchStorage {
+        uint256 lastAccess;
+        address nominee;
     }
 
-    function preCheck(address account, ExecutorTransaction calldata, uint256, bytes calldata)
+    mapping(address account => DeadmanSwitchStorage) public lastAccess;
+
+    event Recovery(address account, address nominee);
+
+    error MissingCondition();
+
+    constructor(ComposableConditionManager _conditionManager)
+        ConditionalExecutor(_conditionManager)
+    { }
+
+    modifier onlyNominee(address account) {
+        require(
+            lastAccess[account].nominee == msg.sender,
+            "DeadmanSwitch: Only nominee can call this function"
+        );
+        _;
+    }
+
+    // IHook functions
+    function preCheck(
+        address account,
+        ExecutorTransaction calldata,
+        uint256,
+        bytes calldata
+    )
         external
         override
         returns (bytes memory)
     {
-        lastAccess[account] = block.timestamp;
+        lastAccess[account].lastAccess = block.timestamp;
     }
 
+    // IHook functions
     function preCheckRootAccess(
         address account,
         ExecutorTransaction calldata rootAccess,
         uint256 executionType,
         bytes calldata executionMeta
-    ) external override returns (bytes memory preCheckData) {}
+    )
+        external
+        override
+        returns (bytes memory preCheckData)
+    { }
 
-    function postCheck(address account, bool success, bytes calldata preCheckData) external override {}
+    // IHook functions
+    function postCheck(
+        address account,
+        bool success,
+        bytes calldata preCheckData
+    )
+        external
+        override
+    { }
 
-    function checkCondition(address account, address, bytes calldata conditions, bytes calldata)
-        public
+    // IExecutor trigger
+    function recover(
+        address account,
+        IExecutorManager manager,
+        ExecutorTransaction calldata recovery,
+        ConditionConfig[] calldata conditions
+    )
+        external
+        onlyIfConditionsMet(account, conditions)
+        onlyNominee(account)
+    {
+        if (!_enforceThisCondition(address(this), conditions)) revert MissingCondition();
+        manager.executeTransaction(account, recovery);
+
+        emit Recovery(account, msg.sender);
+    }
+
+    function _enforceThisCondition(
+        address checkIfEnabledCondition,
+        ConditionConfig[] calldata conditions
+    )
+        private
+        pure
+        returns (bool isEnabled)
+    {
+        for (uint256 i = 0; i < conditions.length; i++) {
+            if (address(conditions[i].condition) == checkIfEnabledCondition) {
+                return true;
+            }
+        }
+    }
+
+    // ICondition
+    function checkCondition(
+        address account,
+        address,
+        bytes calldata conditions,
+        bytes calldata
+    )
+        external
         view
         override
         returns (bool)
     {
         DeadmansSwitchParams memory params = abi.decode(conditions, (DeadmansSwitchParams));
-        return block.timestamp + params.timeout >= lastAccess[account];
+        return block.timestamp + params.timeout >= lastAccess[account].lastAccess;
     }
 
-    function isValidSignature(bytes32 hash, bytes memory signature)
+    function supportsInterface(bytes4 interfaceID) external view override returns (bool) { }
+
+    function name() external view override returns (string memory name) { }
+
+    function version() external view override returns (string memory version) { }
+
+    function metadataProvider()
         external
         view
         override
-        returns (bytes4 magicValue)
-    {
-        return 0xFFFFFFFF;
-    }
+        returns (uint256 providerType, bytes memory location)
+    { }
 
-    function validateUserOp(UserOperation calldata userOp, bytes32 userOpHash) external override returns (uint256) {
-        address account = userOp.sender;
-        if (checkCondition(account, address(0), userOp.signature, userOp.callData)) return 1;
-        return 0;
-    }
-
-    function supportsInterface(bytes4 interfaceID) external view override returns (bool) {}
+    function requiresRootAccess() external view override returns (bool requiresRootAccess) { }
 }

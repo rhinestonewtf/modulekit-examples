@@ -2,15 +2,15 @@
 
 pragma solidity ^0.8.19;
 
-import {Test} from "forge-std/Test.sol";
+import { Test } from "forge-std/Test.sol";
 import {
     RhinestoneModuleKit,
     RhinestoneModuleKitLib,
     RhinestoneAccount
 } from "modulekit/test/utils/safe-base/RhinestoneModuleKit.sol";
 
-import {MockERC20} from "solmate/test/utils/mocks/MockERC20.sol";
-import {MockERC721} from "solmate/test/utils/mocks/MockERC721.sol";
+import { MockERC20 } from "solmate/test/utils/mocks/MockERC20.sol";
+import { MockERC721 } from "solmate/test/utils/mocks/MockERC721.sol";
 
 import "../src/DeadmansSwitch/DeadmanSwitch.sol";
 import "modulekit/test/mocks/MockExecutor.sol";
@@ -51,15 +51,17 @@ contract ERC721FlashLoanTest is Test, RhinestoneModuleKit {
         instance.addHook(address(dms));
         instance.addValidator(address(dms));
 
-        vm.warp(16000000);
+        vm.warp(16_000_000);
 
         assertEq(token.balanceOf(receiver), 0);
-        mockExecutor.exec(instance.aux.executorManager, instance.account, address(token), receiver, 100);
+        mockExecutor.exec(
+            instance.aux.executorManager, instance.account, address(token), receiver, 100
+        );
         assertEq(token.balanceOf(receiver), 100);
 
         uint256 lastExec = dms.lastAccess(instance.account);
-        assertEq(lastExec, 16000000);
+        assertEq(lastExec, 16_000_000);
 
-        vm.warp(16000001);
+        vm.warp(16_000_001);
     }
 }

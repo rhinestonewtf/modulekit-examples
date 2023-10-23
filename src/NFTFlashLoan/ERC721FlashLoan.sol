@@ -4,12 +4,12 @@ pragma solidity ^0.8.21;
 import "forge-std/interfaces/IERC20.sol";
 import "forge-std/interfaces/IERC721.sol";
 
-import {IFallbackMethod} from "modulekit/common/FallbackHandler.sol";
-import {ERC721ModuleKit} from "modulekit/modulekit/integrations/ERC721Actions.sol";
-import {ERC20ModuleKit} from "modulekit/modulekit/integrations/ERC20Actions.sol";
+import { IFallbackMethod } from "modulekit/common/FallbackHandler.sol";
+import { ERC721ModuleKit } from "modulekit/modulekit/integrations/ERC721Actions.sol";
+import { ERC20ModuleKit } from "modulekit/modulekit/integrations/ERC20Actions.sol";
 
-import {ExecutorBase} from "modulekit/modulekit/ExecutorBase.sol";
-import {IExecutorManager, ExecutorAction, ModuleExecLib} from "modulekit/modulekit/IExecutor.sol";
+import { ExecutorBase } from "modulekit/modulekit/ExecutorBase.sol";
+import { IExecutorManager, ExecutorAction, ModuleExecLib } from "modulekit/modulekit/IExecutor.sol";
 
 import "./interfaces/IERC3156FlashBorrower.sol";
 import "./interfaces/IERC3156FlashLender.sol";
@@ -43,9 +43,12 @@ contract FlashloanLenderModule is ExecutorBase, IFallbackMethod {
 
     event FeeToken(address indexed account, address indexed token);
     event Fee(address indexed account, address indexed token, uint256 indexed tokenId, uint256 fee);
-    event FlashLoan(address indexed account, address indexed token, uint256 indexed tokenId, uint256 fee);
+    event FlashLoan(
+        address indexed account, address indexed token, uint256 indexed tokenId, uint256 fee
+    );
 
-    mapping(address account => mapping(address token => mapping(uint256 tokenId => uint256 fee))) public _feePerToken;
+    mapping(address account => mapping(address token => mapping(uint256 tokenId => uint256 fee)))
+        public _feePerToken;
 
     mapping(address account => address flashFeeToken) public _flashFeeTokenPerAccount;
 
@@ -89,7 +92,11 @@ contract FlashloanLenderModule is ExecutorBase, IFallbackMethod {
      * @param tokenId ID of the NFT.
      * @return hasToken if the NFT is available for flash loan, false otherwise.
      */
-    function _availableForFlashLoan(address account, address token, uint256 tokenId)
+    function _availableForFlashLoan(
+        address account,
+        address token,
+        uint256 tokenId
+    )
         internal
         view
         returns (bool hasToken)
@@ -117,7 +124,15 @@ contract FlashloanLenderModule is ExecutorBase, IFallbackMethod {
      * @param tokenId ID of the NFT.
      * @return fee amount for the specified NFT.
      */
-    function _tokenOwnerFee(address account, address token, uint256 tokenId) internal view returns (uint256 fee) {
+    function _tokenOwnerFee(
+        address account,
+        address token,
+        uint256 tokenId
+    )
+        internal
+        view
+        returns (uint256 fee)
+    {
         fee = _feePerToken[account][token][tokenId];
     }
     /**
@@ -128,7 +143,15 @@ contract FlashloanLenderModule is ExecutorBase, IFallbackMethod {
      * @return total Fee amount for the specified NFT.
      */
 
-    function _flashFee(address account, address token, uint256 tokenId) internal view returns (uint256 total) {
+    function _flashFee(
+        address account,
+        address token,
+        uint256 tokenId
+    )
+        internal
+        view
+        returns (uint256 total)
+    {
         uint256 tokenOwnerFee = _tokenOwnerFee(account, token, tokenId);
         total = tokenOwnerFee + calcDevFee(tokenOwnerFee, FEE_PERCENTAGE);
     }
@@ -151,8 +174,12 @@ contract FlashloanLenderModule is ExecutorBase, IFallbackMethod {
         address token,
         uint256 tokenId,
         bytes memory data
-    ) internal returns (bool) {
-        (IExecutorManager manager, bytes memory borrowData) = abi.decode(data, (IExecutorManager, bytes));
+    )
+        internal
+        returns (bool)
+    {
+        (IExecutorManager manager, bytes memory borrowData) =
+            abi.decode(data, (IExecutorManager, bytes));
 
         // Fee that borrower has to pay to account
         uint256 tokenBorrowerFee = _tokenOwnerFee(account, token, tokenId);
@@ -172,8 +199,9 @@ contract FlashloanLenderModule is ExecutorBase, IFallbackMethod {
         manager.exec(account, sendToken);
 
         // ERC3156 compliant callback
-        bool success = borrower.onFlashLoan(account, token, tokenId, tokenBorrowerFee + feeDev, borrowData)
-            == keccak256("ERC3156FlashBorrower.onFlashLoan");
+        bool success = borrower.onFlashLoan(
+            account, token, tokenId, tokenBorrowerFee + feeDev, borrowData
+        ) == keccak256("ERC3156FlashBorrower.onFlashLoan");
         if (!success) revert FlashLoan_CallbackFailed();
 
         // ensure that borrower sent token back to lender
@@ -210,7 +238,12 @@ contract FlashloanLenderModule is ExecutorBase, IFallbackMethod {
      *
      * This slices out the function signature from the original calldata, and calls the adequate function
      */
-    function handle(address account, address sender, uint256 value, bytes calldata data)
+    function handle(
+        address account,
+        address sender,
+        uint256 value,
+        bytes calldata data
+    )
         external
         override
         returns (bytes memory result)
@@ -227,12 +260,21 @@ contract FlashloanLenderModule is ExecutorBase, IFallbackMethod {
         } else if (functionSig == IERC6682.flashFeeToken.selector) {
             result = abi.encode(_flashFeeToken(account));
         } else if (functionSig == IERC3156FlashLender.flashLoan.selector) {
-            (IERC3156FlashBorrower borrower, address token, uint256 tokenId, bytes memory flashloanData) =
-                abi.decode(data[4:], (IERC3156FlashBorrower, address, uint256, bytes));
+            (
+                IERC3156FlashBorrower borrower,
+                address token,
+                uint256 tokenId,
+                bytes memory flashloanData
+            ) = abi.decode(data[4:], (IERC3156FlashBorrower, address, uint256, bytes));
             return abi.encode(_flashLoan(account, borrower, token, tokenId, flashloanData));
         } else if (functionSig == IERC3156FlashBorrower.onFlashLoan.selector) {
-            (address lender, address token, uint256 tokenId, uint256 fee, bytes memory tokenGatedAction) =
-                abi.decode(data[4:], (address, address, uint256, uint256, bytes));
+            (
+                address lender,
+                address token,
+                uint256 tokenId,
+                uint256 fee,
+                bytes memory tokenGatedAction
+            ) = abi.decode(data[4:], (address, address, uint256, uint256, bytes));
             return abi.encode(_onFlashLoan(account, lender, token, tokenId, fee, tokenGatedAction));
         }
     }
@@ -244,7 +286,10 @@ contract FlashloanLenderModule is ExecutorBase, IFallbackMethod {
         uint256 tokenId,
         uint256 fee,
         bytes memory _callbackParams
-    ) internal returns (bytes32) {
+    )
+        internal
+        returns (bytes32)
+    {
         console2.log("callback");
         CallbackParams memory callbackParams = abi.decode(_callbackParams, (CallbackParams));
         // ---- execute token gated action here
@@ -253,13 +298,18 @@ contract FlashloanLenderModule is ExecutorBase, IFallbackMethod {
         return keccak256("ERC3156FlashBorrower.onFlashLoan");
     }
 
-    function supportsInterface(bytes4 interfaceID) external view override returns (bool) {}
+    function supportsInterface(bytes4 interfaceID) external view override returns (bool) { }
 
-    function name() external view override returns (string memory name) {}
+    function name() external view override returns (string memory name) { }
 
-    function version() external view override returns (string memory version) {}
+    function version() external view override returns (string memory version) { }
 
-    function metadataProvider() external view override returns (uint256 providerType, bytes memory location) {}
+    function metadataProvider()
+        external
+        view
+        override
+        returns (uint256 providerType, bytes memory location)
+    { }
 
-    function requiresRootAccess() external view override returns (bool requiresRootAccess) {}
+    function requiresRootAccess() external view override returns (bool requiresRootAccess) { }
 }
