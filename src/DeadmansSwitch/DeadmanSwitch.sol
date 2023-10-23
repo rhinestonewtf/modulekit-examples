@@ -75,6 +75,10 @@ contract DeadmanSwitch is IHook, ICondition, ConditionalExecutor {
         override
     { }
 
+    function setNominee(address _nominee) external {
+        _lastAccess[msg.sender].nominee = _nominee;
+    }
+
     // IExecutor trigger
     function recover(
         address account,

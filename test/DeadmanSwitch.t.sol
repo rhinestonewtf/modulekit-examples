@@ -17,6 +17,7 @@ import "modulekit/test/mocks/MockExecutor.sol";
 import "modulekit/test/mocks/MockRegistry.sol";
 
 import "forge-std/console2.sol";
+import "forge-std/interfaces/IERC20.sol";
 import "modulekit/core/ComposableCondition.sol";
 
 contract DeadmanSwitchTest is Test, RhinestoneModuleKit {
@@ -55,9 +56,9 @@ contract DeadmanSwitchTest is Test, RhinestoneModuleKit {
         instance.addExecutor(address(mockExecutor));
     }
 
-    function test_lastAccess__shouldUpdateLastAccess() internal {
+    function test_IterateLastAccess() public {
         instance.addHook(address(dms));
-        instance.addValidator(address(dms));
+        instance.addExecutor(address(dms));
 
         vm.warp(16_000_000);
 
@@ -74,5 +75,43 @@ contract DeadmanSwitchTest is Test, RhinestoneModuleKit {
         assertEq(lastExec, 16_000_000);
 
         vm.warp(16_000_001);
+    }
+
+    function test_recoverAccount() public {
+        test_IterateLastAccess();
+
+        address nominee = makeAddr("nominee");
+
+        DeadmansSwitchParams memory params = DeadmansSwitchParams({ timeout: 365 days });
+
+        ConditionConfig[] memory conditions = new ConditionConfig[](1);
+        conditions[0] = ConditionConfig({
+            condition: ICondition(address(dms)),
+            conditionData: abi.encode(params)
+        });
+
+        vm.startPrank(instance.account);
+        conditionManager.setHash({ executor: address(dms), conditions: conditions });
+        dms.setNominee(nominee);
+        vm.stopPrank();
+
+        ExecutorAction[] memory actions = new ExecutorAction[](1);
+        actions[0] = ExecutorAction({
+            to: payable(address(token)),
+            value: 0,
+            data: abi.encodeCall(IERC20.transfer, (address(nominee), 100))
+        });
+        ExecutorTransaction memory recoveryActions =
+            ExecutorTransaction({ actions: actions, nonce: 0, metadataHash: bytes32(0) });
+
+        vm.prank(nominee);
+        dms.recover(
+            instance.account,
+            IExecutorManager(address(instance.aux.executorManager)),
+            recoveryActions,
+            conditions
+        );
+
+        assertEq(token.balanceOf(nominee), 100);
     }
 }
