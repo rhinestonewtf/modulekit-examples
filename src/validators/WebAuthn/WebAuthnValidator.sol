@@ -17,7 +17,6 @@ struct PassKeyId {
 }
 
 contract WebAuthnValidator is ValidatorBase {
-
     string public constant NAME = "PassKeys Ownership Registry Module";
     string public constant VERSION = "0.2.0";
 
@@ -64,9 +63,7 @@ contract WebAuthnValidator is ValidatorBase {
             bytes memory clientData,
             uint256 clientChallengeDataOffset,
             uint256[2] memory rs
-        ) = abi.decode(
-            signature, (bytes32, bytes, bytes1, bytes, uint256, uint256[2])
-        );
+        ) = abi.decode(signature, (bytes32, bytes, bytes1, bytes, uint256, uint256[2]));
 
         PassKeyId memory passKey = smartAccountPassKeys[userOp.sender];
         require(passKey.pubKeyY != 0 && passKey.pubKeyY != 0, "Key not found");

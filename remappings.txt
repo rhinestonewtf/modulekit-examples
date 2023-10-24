@@ -12,3 +12,4 @@ safe-contracts/=lib/modulekit/lib/safe-contracts/
 sentinellist/=lib/modulekit/lib/sentinellist/
 solady/=lib/modulekit/lib/solady/src/
 solmate/=lib/modulekit/lib/solmate/src/
+checknsignatures/=lib/checknsignatures/src

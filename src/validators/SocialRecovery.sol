@@ -8,12 +8,8 @@ import {
     VALIDATION_FAILED,
     ERC1271_MAGICVALUE
 } from "modulekit/modulekit/ValidatorBase.sol";
-
-// import { IRecoveryModule } from "modulekit/contracts/modules/recovery/IRecoveryModule.sol";
-// import { ISignatureValidator } from "modulekit/contracts/modules/validators/ISignatureValidator.sol";
-import { CheckSignatures } from "modulekit//modules/lib/signatures/CheckNSignature.sol";
-
-import {SentinelListLib} from "sentinellist/src/SentinelList.sol";
+import { CheckSignatures } from "checknsignatures/CheckNSignatures.sol";
+import { SentinelListLib } from "sentinellist/src/SentinelList.sol";
 
 import "forge-std/console2.sol";
 
@@ -41,19 +37,24 @@ contract SocialRecovery is ValidatorBase {
     error AlreadySetup();
     error NotInitialized();
 
-    function getConfig(address account)
+    /**
+     * @dev validates userOperation
+     * @param userOp User Operation to be validated.
+     * @param userOpHash Hash of the User Operation to be validated.
+     * @return sigValidationResult 0 if signature is valid, 1 otherwise.
+     */
+    function validateUserOp(
+        UserOperation calldata userOp,
+        bytes32 userOpHash
+    )
         external
-        view
-        returns (uint8 threshold, uint8 guardianCount, uint16 recoveryNonce)
+        override
+        returns (uint256)
     {
-        SocialRecoveryConfig storage config = guardians[account];
-        return (config.threshold, config.guardianCount, config.recoveryNonce);
-    }
-
-    function validateRecoveryProof(bytes calldata recoveryProof) external override returns (bool) {
-        SocialRecoveryConfig storage config = guardians[msg.sender];
-        if (config.threshold == 0) revert NotInitialized();
-        (bytes32 dataHash, bytes memory signatures) = abi.decode(recoveryProof, (bytes32, bytes));
+        SocialRecoveryConfig storage config = guardians[userOp.sender];
+        if (config.threshold == 0) return VALIDATION_FAILED;
+        (bytes memory signature,) = abi.decode(userOp.signature, (bytes, address));
+        (bytes32 dataHash, bytes memory signatures) = abi.decode(signature, (bytes32, bytes));
         if (keccak256(abi.encodePacked(config.recoveryNonce)) != dataHash) revert InvalidNonce();
         config.recoveryNonce++;
 
@@ -62,21 +63,25 @@ contract SocialRecovery is ValidatorBase {
             dataHash.recoverNSignatures(signatures, config.threshold);
 
         if (recoveredGuardians.length < config.threshold) {
-            revert InvalidThreshold(config.threshold);
+            return VALIDATION_FAILED;
         }
 
         //check if guardians are in the list
         for (uint256 i; i < recoveredGuardians.length; i++) {
             if (!config.guardians.contains(recoveredGuardians[i])) {
-                revert InvalidGuardian(recoveredGuardians[i]);
+                return VALIDATION_FAILED;
             }
         }
-        return true;
+        return VALIDATION_SUCCESS;
     }
 
-    function getRecoverySchema() external view returns (string memory) {
-        // TODO: implement
-        return "";
+    function getConfig(address account)
+        external
+        view
+        returns (uint8 threshold, uint8 guardianCount, uint16 recoveryNonce)
+    {
+        SocialRecoveryConfig storage config = guardians[account];
+        return (config.threshold, config.guardianCount, config.recoveryNonce);
     }
 
     function setupGuardian(address[] memory _guardians, uint8 _threshold) external {
@@ -134,25 +139,6 @@ contract SocialRecovery is ValidatorBase {
     }
 
     /**
-     * @dev validates userOperation
-     * @param userOp User Operation to be validated.
-     * @param userOpHash Hash of the User Operation to be validated.
-     * @return sigValidationResult 0 if signature is valid, 1 otherwise.
-     */
-    function validateUserOp(
-        UserOperation calldata userOp,
-        bytes32 userOpHash
-    )
-        external
-        view
-        override
-        returns (uint256)
-    {
-        
-        return VALIDATION_SUCCESS;
-    }
-
-    /**
      * @dev validates a 1271 signature request
      * @param signedDataHash Hash of the signed data.
      * @param moduleSignature Signature to be validated.
@@ -167,6 +153,6 @@ contract SocialRecovery is ValidatorBase {
         override
         returns (bytes4)
     {
-            return 0xffffffff; // Not supported
+        return 0xffffffff; // Not supported
     }
 }

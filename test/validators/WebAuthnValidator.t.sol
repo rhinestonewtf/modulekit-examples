@@ -8,7 +8,11 @@ import {
     RhinestoneModuleKitLib,
     RhinestoneAccount
 } from "modulekit/test/utils/biconomy-base/RhinestoneModuleKit.sol";
-import { WebAuthnValidator, ERC1271_MAGICVALUE, PassKeyId } from "../../src/validators/WebAuthn/WebAuthnValidator.sol";
+import {
+    WebAuthnValidator,
+    ERC1271_MAGICVALUE,
+    PassKeyId
+} from "../../src/validators/WebAuthn/WebAuthnValidator.sol";
 
 contract WebAuthnValidatorTest is Test, RhinestoneModuleKit {
     using RhinestoneModuleKitLib for RhinestoneAccount;
@@ -18,7 +22,7 @@ contract WebAuthnValidatorTest is Test, RhinestoneModuleKit {
     WebAuthnValidator webAuthnValidator;
 
     string constant keySalt = "0";
-        string constant keyName = "key";
+    string constant keyName = "key";
 
     function setUp() public {
         // Setup account
@@ -31,7 +35,7 @@ contract WebAuthnValidatorTest is Test, RhinestoneModuleKit {
         vm.prank(instance.account);
 
         // Get keys
-         uint256[2] memory publicKey = createPasskey(keySalt);
+        uint256[2] memory publicKey = createPasskey(keySalt);
 
         // Add two passkeys
         bytes memory addPassKeyCalldata = abi.encodeWithSelector(
@@ -52,19 +56,10 @@ contract WebAuthnValidatorTest is Test, RhinestoneModuleKit {
         uint256[2] memory publicKey = createPasskey(keySalt);
 
         // Get active keys
-        PassKeyId memory activeKeys =
-            webAuthnValidator.getAuthorizedKey(address(instance.account));
+        PassKeyId memory activeKeys = webAuthnValidator.getAuthorizedKey(address(instance.account));
 
-        assertEq(
-            activeKeys.pubKeyX,
-            publicKey[0],
-            "Incorrect pub Key X"
-        );
-        assertEq(
-            activeKeys.pubKeyY,
-            publicKey[1],
-            "Incorrect pub Key Y"
-        );
+        assertEq(activeKeys.pubKeyX, publicKey[0], "Incorrect pub Key X");
+        assertEq(activeKeys.pubKeyY, publicKey[1], "Incorrect pub Key Y");
     }
 
     function testSendEth() public {
@@ -93,7 +88,7 @@ contract WebAuthnValidatorTest is Test, RhinestoneModuleKit {
         assertEq(receiver.balance, 10 gwei, "Receiver should have 10 gwei");
     }
 
-    // Helpers 
+    // Helpers
 
     function createPasskey(string memory salt) public returns (uint256[2] memory) {
         string[] memory cmd = new string[](6);

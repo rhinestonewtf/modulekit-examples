@@ -37,8 +37,8 @@ library WebAuthnLib {
         uint256 clientChallengeDataOffset,
         uint256[2] memory rs
     )
-        view
         internal
+        view
         returns (bytes32 result)
     {
         // Let the caller check if User Presence (0x01) or User Verification (0x04) are set
