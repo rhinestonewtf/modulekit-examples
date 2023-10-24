@@ -37,6 +37,7 @@ library WebAuthnLib {
         uint256 clientChallengeDataOffset,
         uint256[2] memory rs
     )
+        view
         internal
         returns (bytes32 result)
     {

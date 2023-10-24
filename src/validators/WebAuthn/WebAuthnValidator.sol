@@ -56,6 +56,7 @@ contract WebAuthnValidator is ValidatorBase {
         internal
         returns (bool isValidSignature)
     {
+        (bytes memory signature,) = abi.decode(userOp.signature, (bytes, address));
         (
             bytes32 keyHash,
             bytes memory authenticatorData,
@@ -64,7 +65,7 @@ contract WebAuthnValidator is ValidatorBase {
             uint256 clientChallengeDataOffset,
             uint256[2] memory rs
         ) = abi.decode(
-            userOp.signature, (bytes32, bytes, bytes1, bytes, uint256, uint256[2])
+            signature, (bytes32, bytes, bytes1, bytes, uint256, uint256[2])
         );
 
         PassKeyId memory passKey = smartAccountPassKeys[userOp.sender];
@@ -108,6 +109,7 @@ contract WebAuthnValidator is ValidatorBase {
         override
         returns (bytes4)
     {
+        // @TODO support signing messages
         return 0xffffffff; // do not support it here
     }
 }
