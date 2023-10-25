@@ -295,8 +295,6 @@ contract FlashloanLenderModule is ExecutorBase, IFallbackMethod {
         return keccak256("ERC3156FlashBorrower.onFlashLoan");
     }
 
-    function supportsInterface(bytes4 interfaceID) external view override returns (bool) { }
-
     function name() external view override returns (string memory name) { }
 
     function version() external view override returns (string memory version) { }

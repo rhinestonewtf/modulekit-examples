@@ -32,7 +32,6 @@ contract WebAuthnValidatorTest is Test, RhinestoneModuleKit {
         // Setup validator
         webAuthnValidator = new WebAuthnValidator();
         (address owner,) = makeAddrAndKey("owner");
-        vm.prank(instance.account);
 
         // Get keys
         uint256[2] memory publicKey = createPasskey(keySalt);
