@@ -9,11 +9,7 @@ import { ERC721ModuleKit } from "modulekit/modulekit/integrations/ERC721Actions.
 import { ERC20ModuleKit } from "modulekit/modulekit/integrations/ERC20Actions.sol";
 
 import { ExecutorBase } from "modulekit/modulekit/ExecutorBase.sol";
-import {
-    IExecutorManager,
-    ExecutorAction,
-    ModuleExecLib
-} from "modulekit/modulekit/interfaces/IExecutor.sol";
+import { IExecutorManager, ExecutorAction, ModuleExecLib } from "modulekit/modulekit/interfaces/IExecutor.sol";
 
 import { IERC3156FlashBorrower } from "./interfaces/IERC3156FlashBorrower.sol";
 import { IERC3156FlashLender } from "./interfaces/IERC3156FlashLender.sol";

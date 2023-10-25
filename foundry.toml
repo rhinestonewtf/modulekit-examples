@@ -9,4 +9,5 @@ line_length = 100
 multiline_func_header = "all"
 number_underscore="thousands"
 
-# See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options
+[rpc_endpoints]
+mainnet = "https://rpc.ankr.com/eth"
