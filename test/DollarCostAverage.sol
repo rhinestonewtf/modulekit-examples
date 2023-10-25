@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.19;
 
-import { Test } from "forge-std/Test.sol";
+import "./MainnetFork.t.sol";
 import {
     RhinestoneModuleKit,
     RhinestoneModuleKitLib,
@@ -25,10 +25,8 @@ import "modulekit/modulekit/integrations/uniswap/helpers/MainnetAddresses.sol";
 address constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
 address constant USDC = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
 
-contract DollarCostAverageTest is Test, RhinestoneModuleKit {
+contract DollarCostAverageTest is MainnetTest, RhinestoneModuleKit {
     using RhinestoneModuleKitLib for RhinestoneAccount; // <-- library that wraps smart account actions for easier testing
-
-    uint256 mainnetFork;
 
     MockExecutor mockExecutor;
     RhinestoneAccount instance; // <-- this is a rhinestone smart account instance
@@ -37,13 +35,11 @@ contract DollarCostAverageTest is Test, RhinestoneModuleKit {
 
     ComposableConditionManager conditionManager;
     ScheduleCondition schedule;
-    string MAINNET_RPC_URL = vm.envString("MAINNET_RPC_URL");
 
     DCA dca;
 
-    function setUp() public {
-        mainnetFork = vm.createFork(MAINNET_RPC_URL);
-        vm.selectFork(mainnetFork);
+    function setUp() public override {
+        super.setUp();
         // setting up receiver address. This is the EOA that this test is sending funds to
         receiver = makeAddr("receiver");
 
