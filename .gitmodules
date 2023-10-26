@@ -4,3 +4,6 @@
 [submodule "lib/modulekit"]
 	path = lib/modulekit
 	url = https://github.com/rhinestonewtf/modulekit
+[submodule "lib/checknsignatures"]
+	path = lib/checknsignatures
+	url = https://github.com/zeroknots/checknsignatures

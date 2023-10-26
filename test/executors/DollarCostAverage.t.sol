@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.19;
 
-import "./MainnetFork.t.sol";
+import "../MainnetFork.t.sol";
 import {
     RhinestoneModuleKit,
     RhinestoneModuleKitLib,
@@ -12,11 +12,10 @@ import {
 import { MockERC20 } from "solmate/test/utils/mocks/MockERC20.sol";
 import { MockERC721 } from "solmate/test/utils/mocks/MockERC721.sol";
 
-import "../src/AutoSavings/DollarCostAverage.sol";
+import "../../src/executors/DollarCostAverage.sol";
 import "modulekit/test/mocks/MockExecutor.sol";
 import "modulekit/test/mocks/MockRegistry.sol";
 
-import "forge-std/console2.sol";
 import "forge-std/interfaces/IERC20.sol";
 import "modulekit/core/ComposableCondition.sol";
 import "modulekit/modulekit/conditions/ScheduleCondition.sol";

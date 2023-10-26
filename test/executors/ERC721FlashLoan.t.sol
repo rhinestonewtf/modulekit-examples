@@ -12,9 +12,19 @@ import {
 import { MockERC20 } from "solmate/test/utils/mocks/MockERC20.sol";
 import { MockERC721 } from "solmate/test/utils/mocks/MockERC721.sol";
 
-import "../src/NFTFlashLoan/ERC721FlashLoan.sol";
-import "../src/NFTFlashLoan/interfaces/IERC3156FlashLender.sol";
-import "../src/NFTFlashLoan/interfaces/IERC3156FlashBorrower.sol";
+import {
+    FlashloanLenderModule,
+    IERC6682,
+    IERC20,
+    IERC721,
+    ExecutorAction,
+    ERC20ModuleKit,
+    ERC721ModuleKit,
+    CallbackParams,
+    IExecutorManager,
+    IERC3156FlashLender,
+    IERC3156FlashBorrower
+} from "../../src/executors/NFTFlashLoan/ERC721FlashLoan.sol";
 
 import "forge-std/console2.sol";
 

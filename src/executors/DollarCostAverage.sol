@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.21;
 
-import "modulekit/modulekit/IHook.sol";
+import "modulekit/modulekit/interfaces/IHook.sol";
 import "modulekit/core/ComposableCondition.sol";
-import "modulekit/modulekit/IExecutor.sol";
+import "modulekit/modulekit/interfaces/IExecutor.sol";
 import "modulekit/modulekit/ValidatorBase.sol";
 import "modulekit/modulekit/integrations/uniswap/v3/UniswapSwaps.sol";
 import "modulekit/modulekit/ConditionalExecutorBase.sol";

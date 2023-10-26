@@ -1,20 +1,18 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.21;
 
-import "forge-std/interfaces/IERC20.sol";
-import "forge-std/interfaces/IERC721.sol";
+import { IERC20 } from "forge-std/interfaces/IERC20.sol";
+import { IERC721 } from "forge-std/interfaces/IERC721.sol";
 
 import { IFallbackMethod } from "modulekit/common/FallbackHandler.sol";
 import { ERC721ModuleKit } from "modulekit/modulekit/integrations/ERC721Actions.sol";
 import { ERC20ModuleKit } from "modulekit/modulekit/integrations/ERC20Actions.sol";
 
 import { ExecutorBase } from "modulekit/modulekit/ExecutorBase.sol";
-import { IExecutorManager, ExecutorAction, ModuleExecLib } from "modulekit/modulekit/IExecutor.sol";
+import { IExecutorManager, ExecutorAction, ModuleExecLib } from "modulekit/modulekit/interfaces/IExecutor.sol";
 
-import "./interfaces/IERC3156FlashBorrower.sol";
-import "./interfaces/IERC3156FlashLender.sol";
-
-import "forge-std/console2.sol";
+import { IERC3156FlashBorrower } from "./interfaces/IERC3156FlashBorrower.sol";
+import { IERC3156FlashLender } from "./interfaces/IERC3156FlashLender.sol";
 
 interface IERC6682 {
     function flashFeeToken() external view returns (address);
@@ -290,15 +288,12 @@ contract FlashloanLenderModule is ExecutorBase, IFallbackMethod {
         internal
         returns (bytes32)
     {
-        console2.log("callback");
         CallbackParams memory callbackParams = abi.decode(_callbackParams, (CallbackParams));
         // ---- execute token gated action here
         callbackParams.managerForBorrower.exec(borrowerAccount, callbackParams.actions);
 
         return keccak256("ERC3156FlashBorrower.onFlashLoan");
     }
-
-    function supportsInterface(bytes4 interfaceID) external view override returns (bool) { }
 
     function name() external view override returns (string memory name) { }
 
