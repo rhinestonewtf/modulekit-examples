@@ -4,7 +4,13 @@ pragma solidity ^0.8.19;
 // Inspired by https://github.com/roleengineer/token-withdrawal-module/blob/master/src/TokenWithdrawalModule.sol
 
 import { ExecutorBase } from "modulekit/modulekit/ExecutorBase.sol";
-import { IExecutorManager, ExecutorAction, ModuleExecLib } from "modulekit/modulekit/interfaces/IExecutor.sol";
+import {
+    IExecutorManager,
+    ExecutorAction,
+    ModuleExecLib
+} from "modulekit/modulekit/interfaces/IExecutor.sol";
+import { ERC20ModuleKit } from "modulekit/modulekit/integrations/ERC20Actions.sol";
+import { IERC20 } from "forge-std/interfaces/IERC20.sol";
 
 struct Withdrawal {
     address payable beneficiary;
@@ -42,19 +48,18 @@ contract PullPayment is ExecutorBase {
         }
         withdrawal.lastExecuted = uint48(block.timestamp);
 
-        bytes memory data;
-        uint256 value;
+        ExecutorAction memory action;
 
         if (withdrawal.tokenAddress != address(0)) {
-            data = abi.encodeWithSignature(
-                "transfer(address,uint256)", withdrawal.beneficiary, withdrawal.value
-            );
+            action = ERC20ModuleKit.transferAction({
+                token: IERC20(withdrawal.tokenAddress),
+                to: withdrawal.beneficiary,
+                amount: withdrawal.value
+            });
         } else {
-            value = withdrawal.value;
+            action =
+                ExecutorAction({ to: withdrawal.beneficiary, data: "", value: withdrawal.value });
         }
-
-        ExecutorAction memory action =
-            ExecutorAction({ to: withdrawal.beneficiary, data: data, value: value });
         manager.exec(account, action);
 
         emit WithdrawalExecuted(account, withdrawal.beneficiary, withdrawalIndex);
