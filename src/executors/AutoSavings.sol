@@ -6,7 +6,7 @@ import "modulekit/modulekit/integrations/uniswap/v3/UniswapSwaps.sol";
 import "modulekit/modulekit/integrations/erc4626/ERC4626Deposit.sol";
 import "modulekit/modulekit/interfaces/IExecutor.sol";
 
-import "forge-std/interfaces/IERC20.sol";
+import "forge-std/console2.sol";
 import "../validators/SessionKey/ISessionKeyValidationModule.sol";
 
 contract AutoSavings is ConditionalExecutor, ISessionKeyValidationModule {
@@ -47,25 +47,31 @@ contract AutoSavings is ConditionalExecutor, ISessionKeyValidationModule {
 
         // check of swap is required
         IERC20 vaultToken = IERC20(config.vault.asset());
+        console2.log("vaultToken", address(vaultToken));
         IERC20 spendToken = config.spendToken;
         if (vaultToken != spendToken) {
             uint256 amountOut = spendToken.balanceOf(msg.sender);
 
-            // this execution could  be provided via calldata / storage
-            manager.exec({
-                account: msg.sender,
-                action: UniswapSwaps.swapExactInputSingle({
-                    smartAccount: msg.sender, // beneficiary of the swap
-                    tokenIn: spendToken, // token to be sold
-                    tokenOut: vaultToken, // token to be bought
-                    amountIn: amountIn
-                })
+            ExecutorAction[] memory swapActions = new ExecutorAction[](2);
+            swapActions[0] = ERC20ModuleKit.approveAction({
+                token: spendToken,
+                to: SWAPROUTER_ADDRESS,
+                amount: amountIn
+            });
+            swapActions[1] = UniswapSwaps.swapExactInputSingle({
+                smartAccount: msg.sender, // beneficiary of the swap
+                tokenIn: spendToken, // token to be sold
+                tokenOut: vaultToken, // token to be bought
+                amountIn: amountIn
             });
 
-            amountOut = spendToken.balanceOf(msg.sender) - amountOut;
-            amountIn = amountOut;
+            // this execution could  be provided via calldata / storage
+            manager.exec({ account: msg.sender, actions: swapActions });
+
+            amountIn = amountOut - spendToken.balanceOf(msg.sender);
         }
 
+        console2.log("Depositing to vault:", amountIn);
         // // deposit into vault
         config.vault.approveAndDeposit({
             manager: manager,
@@ -73,6 +79,21 @@ contract AutoSavings is ConditionalExecutor, ISessionKeyValidationModule {
             receiver: msg.sender,
             amount: amountIn
         });
+    }
+
+    function setConfig(
+        bytes32 id,
+        address spendToken,
+        uint256 maxAmountIn,
+        IERC4626 vault
+    )
+        external
+    {
+        SavingsConfig storage config = savingsConfig[msg.sender][id];
+
+        config.spendToken = IERC20(spendToken);
+        config.maxAmountIn = maxAmountIn;
+        config.vault = vault;
     }
 
     function validateSessionUserOp(
