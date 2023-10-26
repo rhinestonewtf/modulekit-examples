@@ -2,7 +2,11 @@
 pragma solidity ^0.8.19;
 
 import { ExecutorBase } from "modulekit/modulekit/ExecutorBase.sol";
-import { IExecutorManager, ExecutorAction, ModuleExecLib } from "modulekit/modulekit/interfaces/IExecutor.sol";
+import {
+    IExecutorManager,
+    ExecutorAction,
+    ModuleExecLib
+} from "modulekit/modulekit/interfaces/IExecutor.sol";
 
 enum RevocationType {
     ERC20,

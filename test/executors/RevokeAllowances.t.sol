@@ -9,12 +9,12 @@ import {
     RhinestoneAccount
 } from "modulekit/test/utils/safe-base/RhinestoneModuleKit.sol";
 
-import {RevokeAllowances} from "../../src/executors/RevokeAllowances.sol";
+import { RevokeAllowances } from "../../src/executors/RevokeAllowances.sol";
 
 contract RevokeAllowancesTest is Test, RhinestoneModuleKit {
-    using RhinestoneModuleKitLib for RhinestoneAccount; 
+    using RhinestoneModuleKitLib for RhinestoneAccount;
 
-     RhinestoneAccount instance;
+    RhinestoneAccount instance;
     RevokeAllowances revokeAllowances;
 
     string constant keySalt = "0";
@@ -31,5 +31,4 @@ contract RevokeAllowancesTest is Test, RhinestoneModuleKit {
         // Add executor to account
         instance.addExecutor(address(revokeAllowances));
     }
-
 }

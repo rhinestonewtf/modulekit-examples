@@ -9,12 +9,12 @@ import {
     RhinestoneAccount
 } from "modulekit/test/utils/safe-base/RhinestoneModuleKit.sol";
 
-import {PullPayment} from "../../src/executors/PullPayment.sol";
+import { PullPayment } from "../../src/executors/PullPayment.sol";
 
 contract PullPaymentTest is Test, RhinestoneModuleKit {
-    using RhinestoneModuleKitLib for RhinestoneAccount; 
+    using RhinestoneModuleKitLib for RhinestoneAccount;
 
-     RhinestoneAccount instance;
+    RhinestoneAccount instance;
     PullPayment pullPayment;
 
     string constant keySalt = "0";
@@ -31,5 +31,4 @@ contract PullPaymentTest is Test, RhinestoneModuleKit {
         // Add executor to account
         instance.addExecutor(address(pullPayment));
     }
-
 }

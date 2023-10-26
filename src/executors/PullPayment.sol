@@ -4,7 +4,11 @@ pragma solidity ^0.8.19;
 // Inspired by https://github.com/roleengineer/token-withdrawal-module/blob/master/src/TokenWithdrawalModule.sol
 
 import { ExecutorBase } from "modulekit/modulekit/ExecutorBase.sol";
-import { IExecutorManager, ExecutorAction, ModuleExecLib } from "modulekit/modulekit/interfaces/IExecutor.sol";
+import {
+    IExecutorManager,
+    ExecutorAction,
+    ModuleExecLib
+} from "modulekit/modulekit/interfaces/IExecutor.sol";
 
 struct Withdrawal {
     address payable beneficiary;
