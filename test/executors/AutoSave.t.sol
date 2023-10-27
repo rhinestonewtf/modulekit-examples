@@ -18,7 +18,8 @@ import "modulekit/test/mocks/MockCondition.sol";
 import "solmate/test/utils/mocks/MockERC20.sol";
 import "../MainnetFork.t.sol";
 import "murky/src/Merkle.sol";
-import "modulekit/modulekit/integrations/interfaces/IERC4626.sol";
+import { IERC4626 } from "modulekit/modulekit/integrations/interfaces/IERC4626.sol";
+import "forge-std/interfaces/IERC20.sol";
 import "../../src/validators/SessionKey/SessionKeyManager.sol";
 
 import "checknsignatures/CheckNSignaturesFoundryHelper.sol";
@@ -115,7 +116,7 @@ contract AutoSaveTest is MainnetTest, RhinestoneModuleKit, CheckNSignaturesFound
     }
 
     function testTrigger() public {
-        mockPaymentEvent(1000 * 18);
+        mockPaymentEvent(0x41414141);
         vm.startPrank(instance.account);
 
         autoSavings.setRelayer(relayer);
@@ -135,7 +136,7 @@ contract AutoSaveTest is MainnetTest, RhinestoneModuleKit, CheckNSignaturesFound
                     token: address(usdc),
                     from: payer,
                     to: instance.account,
-                    amount: 1000 * 18
+                    amount: 0x41414141
                 })
                 ),
             merkleProof: proof,
@@ -149,8 +150,8 @@ contract AutoSaveTest is MainnetTest, RhinestoneModuleKit, CheckNSignaturesFound
         conditionManager.setHash(address(autoSavings), conditions);
         autoSavings.setConfig({
             id: 0,
-            spendToken: address(usdc),
-            maxAmountIn: 1000,
+            maxAmountIn: 0x41414141,
+            feePercentage: 100,
             vault: IERC4626(address(vault))
         });
 
@@ -167,7 +168,13 @@ contract AutoSaveTest is MainnetTest, RhinestoneModuleKit, CheckNSignaturesFound
             value: 0,
             callData: abi.encodeCall(
                 autoSavings.trigger,
-                (IExecutorManager(address(instance.aux.executorManager)), 0, 1000, conditions)
+                (
+                    usdc,
+                    IExecutorManager(address(instance.aux.executorManager)),
+                    0,
+                    0x41414141,
+                    conditions
+                )
                 ),
             signature: ValidatorSelectionLib.encodeValidator(encSignature, address(sessionKeyManager))
         });
