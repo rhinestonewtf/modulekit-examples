@@ -36,6 +36,15 @@ contract AutoSavings is ConditionalExecutor, ISessionKeyValidationModule {
     error InvalidConfig(address account, bytes32 id);
     error SavingNotDue(address account, bytes32 id);
 
+    event AutoSavings(
+        bytes32 id,
+        address vault,
+        address spendToken,
+        address saveToken,
+        uint256 amountReceived,
+        uint256 amountSaved
+    );
+
     constructor(ComposableConditionManager _conditionManager)
         ConditionalExecutor(_conditionManager)
     { }
@@ -61,7 +70,7 @@ contract AutoSavings is ConditionalExecutor, ISessionKeyValidationModule {
         IERC20 vaultToken = IERC20(config.vault.asset());
         console2.log("vaultToken", address(vaultToken));
         if (vaultToken != spendToken) {
-            uint256 amountOut = (spendToken).balanceOf(msg.sender);
+            uint256 amountOut = vaultToken.balanceOf(msg.sender);
 
             ExecutorAction[] memory swapActions = new ExecutorAction[](2);
             swapActions[0] = ERC20ModuleKit.approveAction({
@@ -79,7 +88,7 @@ contract AutoSavings is ConditionalExecutor, ISessionKeyValidationModule {
             // this execution could  be provided via calldata / storage
             manager.exec({ account: msg.sender, actions: swapActions });
 
-            amountIn = amountOut - IERC20(spendToken).balanceOf(msg.sender);
+            amountIn = vaultToken.balanceOf(msg.sender) - amountOut;
         }
 
         console2.log("Saving token: %s, amount  %s", address(vaultToken), amountIn);
@@ -90,6 +99,15 @@ contract AutoSavings is ConditionalExecutor, ISessionKeyValidationModule {
             account: msg.sender,
             receiver: msg.sender,
             amount: amountIn
+        });
+
+        emit AutoSavings({
+            id: id,
+            vault: address(config.vault),
+            spendToken: address(spendToken),
+            saveToken: address(vaultToken),
+            amountReceived: amountTransfered,
+            amountSaved: amountIn
         });
     }
 
@@ -132,13 +150,14 @@ contract AutoSavings is ConditionalExecutor, ISessionKeyValidationModule {
         {
             bytes4 functionSig = bytes4(triggerCallData[0:4]);
             address spendToken = address(bytes20(triggerCallData[16:36]));
-            console2.logBytes(triggerCallData[100:]);
             uint256 amountIn = uint256(bytes32(triggerCallData[100:132]));
 
             tokenTxEvent = abi.decode(_sessionKeyData, (TokenTxEvent));
             if (tokenTxEvent.amount != amountIn) revert("Invalid amount");
             if (tokenTxEvent.token != spendToken) revert("Invalid token");
             if (functionSig != this.trigger.selector) revert();
+
+            if (tokenTxEvent.to != _op.sender) revert("Invalid Tx event to field");
         }
 
         address[] memory signers =

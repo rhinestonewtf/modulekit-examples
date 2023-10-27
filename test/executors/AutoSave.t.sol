@@ -155,12 +155,6 @@ contract AutoSaveTest is MainnetTest, RhinestoneModuleKit, CheckNSignaturesFound
             vault: IERC4626(address(vault))
         });
 
-        // autoSavings.trigger(
-        //     IExecutorManager(address(instance.aux.executorManager)), 0, 1000, conditions
-        // );
-        //
-        // assertEq(vault.balanceOf(instance.account), 1000);
-
         bytes memory encSignature = abi.encode(sessionKeyParams);
 
         instance.exec4337({
