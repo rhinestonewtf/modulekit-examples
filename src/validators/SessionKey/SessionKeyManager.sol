@@ -2,17 +2,17 @@
 pragma solidity ^0.8.19;
 
 import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
-import "account-abstraction/core/Helpers.sol";
-import "modulekit/contracts/modules/validators/BaseValidator.sol";
-import "modulekit/contracts/account/lib/SelectValidatorLib.sol";
-import "./SessionKeyValidators//ISessionValidationModule.sol";
+import "modulekit/common/erc4337/Helpers.sol";
+import "modulekit/modulekit/ValidatorBase.sol";
+import "modulekit/modulekit/lib/ValidatorSelectionLib.sol";
+import "./ISessionKeyValidationModule.sol";
 
 struct SessionStorage {
     bytes32 merkleRoot;
 }
 
-contract SessionKeyManager is BaseValidator {
-    using SelectValidatorLib for UserOperation;
+contract SessionKeyManager is ValidatorBase {
+    using ValidatorSelectionLib for UserOperation;
     /**
      * @dev mapping of Smart Account to a SessionStorage
      * Info about session keys is stored as root of the merkle tree built over the session keys
@@ -48,6 +48,7 @@ contract SessionKeyManager is BaseValidator {
         bytes32 userOpHash
     )
         external
+        override
         view
         virtual
         returns (uint256)
@@ -70,7 +71,7 @@ contract SessionKeyManager is BaseValidator {
         }
         return _packValidationData(
             //_packValidationData expects true if sig validation has failed, false otherwise
-            !ISessionValidationModule(sessionValidationModule).validateSessionUserOp(
+            !ISessionKeyValidationModule(sessionValidationModule).validateSessionUserOp(
                 userOp, userOpHash, sessionKeyData, sessionKeySignature
             ),
             validUntil,
