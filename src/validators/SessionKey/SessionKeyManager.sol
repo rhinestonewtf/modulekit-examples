@@ -88,21 +88,19 @@ contract SessionKeyManager is ValidatorBase {
             sessionValidationModule: sessionKeyParams.sessionValidationModule,
             sessionKeyData: sessionKeyParams.sessionKeyData
         });
-        if (!MerkleProof.verify(sessionKeyParams.merkleProof, sessionKeyStorage.merkleRoot, leaf)) {
-            revert("SessionNotApproved");
-        }
-        return _packValidationData(
-            //_packValidationData expects true if sig validation has failed, false otherwise
-            !ISessionKeyValidationModule(sessionKeyParams.sessionValidationModule)
-                .validateSessionUserOp(
-                userOp,
-                userOpHash,
-                sessionKeyParams.sessionKeyData,
-                sessionKeyParams.sessionKeySignature
-            ),
-            uint48(sessionKeyParams.validUntil),
-            uint48(sessionKeyParams.validAfter)
+        // if (!MerkleProof.verify(sessionKeyParams.merkleProof, sessionKeyStorage.merkleRoot, leaf)) {
+        //     revert("SessionNotApproved");
+        // }
+        //_packValidationData expects true if sig validation has failed, false otherwise
+        bool validSig = ISessionKeyValidationModule(sessionKeyParams.sessionValidationModule)
+            .validateSessionUserOp(
+            userOp,
+            userOpHash,
+            sessionKeyParams.sessionKeyData,
+            sessionKeyParams.sessionKeySignature
         );
+
+        if (validSig) return 0;
     }
 
     /**

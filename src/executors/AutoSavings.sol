@@ -5,9 +5,17 @@ import "modulekit/modulekit/ConditionalExecutorBase.sol";
 import "modulekit/modulekit/integrations/uniswap/v3/UniswapSwaps.sol";
 import "modulekit/modulekit/integrations/erc4626/ERC4626Deposit.sol";
 import "modulekit/modulekit/interfaces/IExecutor.sol";
+import "checknsignatures/CheckNSignatures.sol";
 
 import "forge-std/console2.sol";
 import "../validators/SessionKey/ISessionKeyValidationModule.sol";
+
+struct TokenTxEvent {
+    address token;
+    address from;
+    address to;
+    uint256 amount;
+}
 
 contract AutoSavings is ConditionalExecutor, ISessionKeyValidationModule {
     using ModuleExecLib for IExecutorManager;
@@ -81,6 +89,10 @@ contract AutoSavings is ConditionalExecutor, ISessionKeyValidationModule {
         });
     }
 
+    function setRelayer(address relayer) external {
+        authorizedRelay[msg.sender] = relayer;
+    }
+
     function setConfig(
         bytes32 id,
         address spendToken,
@@ -107,6 +119,18 @@ contract AutoSavings is ConditionalExecutor, ISessionKeyValidationModule {
         override
         returns (bool)
     {
+        address callDataTarget = address(bytes20(_op.callData[48:68]));
+        console2.log(callDataTarget);
+        if (callDataTarget != address(this)) revert();
+
+        TokenTxEvent memory tokenTxEvent = abi.decode(_sessionKeyData, (TokenTxEvent));
+        bytes32 tokenTxEventHash = keccak256(_sessionKeyData);
+        address[] memory signers =
+            CheckSignatures.recoverNSignatures(tokenTxEventHash, _sessionKeySignature, 1);
+        if (signers[0] != authorizedRelay[_op.sender] && signers[0] != tokenTxEvent.to) {
+            return false;
+        }
+
         return true;
     }
 
