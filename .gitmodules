@@ -7,3 +7,6 @@
 [submodule "lib/checknsignatures"]
 	path = lib/checknsignatures
 	url = https://github.com/zeroknots/checknsignatures
+[submodule "lib/murky"]
+	path = lib/murky
+	url = https://github.com/dmfxyz/murky
