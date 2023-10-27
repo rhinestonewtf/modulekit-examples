@@ -11,6 +11,15 @@ struct SessionStorage {
     bytes32 merkleRoot;
 }
 
+struct SessionKeyParams {
+    uint256 validUntil;
+    uint256 validAfter;
+    address sessionValidationModule;
+    bytes sessionKeyData;
+    bytes32[] merkleProof;
+    bytes sessionKeySignature;
+}
+
 contract SessionKeyManager is ValidatorBase {
     using ValidatorSelectionLib for UserOperation;
     /**
@@ -37,6 +46,21 @@ contract SessionKeyManager is ValidatorBase {
         userSessions[msg.sender].merkleRoot = _merkleRoot;
     }
 
+    function _sessionMerkelLeaf(
+        uint256 validUntil,
+        uint256 validAfter,
+        address sessionValidationModule,
+        bytes memory sessionKeyData
+    )
+        public
+        pure
+        returns (bytes32)
+    {
+        return keccak256(
+            abi.encodePacked(validUntil, validAfter, sessionValidationModule, sessionKeyData)
+        );
+    }
+
     /**
      * @dev validates userOperation
      * @param userOp User Operation to be validated.
@@ -48,34 +72,36 @@ contract SessionKeyManager is ValidatorBase {
         bytes32 userOpHash
     )
         external
-        override
         view
         virtual
+        override
         returns (uint256)
     {
         SessionStorage storage sessionKeyStorage = _getSessionData(msg.sender);
-        (
-            uint48 validUntil,
-            uint48 validAfter,
-            address sessionValidationModule,
-            bytes memory sessionKeyData,
-            bytes32[] memory merkleProof,
-            bytes memory sessionKeySignature
-        ) = abi.decode(userOp.decodeSignature(), (uint48, uint48, address, bytes, bytes32[], bytes));
 
-        bytes32 leaf = keccak256(
-            abi.encodePacked(validUntil, validAfter, sessionValidationModule, sessionKeyData)
-        );
-        if (!MerkleProof.verify(merkleProof, sessionKeyStorage.merkleRoot, leaf)) {
+        SessionKeyParams memory sessionKeyParams =
+            abi.decode(userOp.decodeSignature(), (SessionKeyParams));
+
+        bytes32 leaf = _sessionMerkelLeaf({
+            validUntil: sessionKeyParams.validUntil,
+            validAfter: sessionKeyParams.validAfter,
+            sessionValidationModule: sessionKeyParams.sessionValidationModule,
+            sessionKeyData: sessionKeyParams.sessionKeyData
+        });
+        if (!MerkleProof.verify(sessionKeyParams.merkleProof, sessionKeyStorage.merkleRoot, leaf)) {
             revert("SessionNotApproved");
         }
         return _packValidationData(
             //_packValidationData expects true if sig validation has failed, false otherwise
-            !ISessionKeyValidationModule(sessionValidationModule).validateSessionUserOp(
-                userOp, userOpHash, sessionKeyData, sessionKeySignature
+            !ISessionKeyValidationModule(sessionKeyParams.sessionValidationModule)
+                .validateSessionUserOp(
+                userOp,
+                userOpHash,
+                sessionKeyParams.sessionKeyData,
+                sessionKeyParams.sessionKeySignature
             ),
-            validUntil,
-            validAfter
+            uint48(sessionKeyParams.validUntil),
+            uint48(sessionKeyParams.validAfter)
         );
     }
 

@@ -18,6 +18,7 @@ import "modulekit/test/mocks/MockCondition.sol";
 import "solmate/test/utils/mocks/MockERC20.sol";
 import "../MainnetFork.t.sol";
 import "modulekit/modulekit/integrations/interfaces/IERC4626.sol";
+import "../../src/validators/SessionKey/SessionKeyManager.sol";
 
 address constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
 address constant USDC = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
@@ -29,6 +30,8 @@ contract AutoSaveTest is MainnetTest, RhinestoneModuleKit {
     MockRegistry registry;
     ComposableConditionManager conditionManager;
     AutoSavings autoSavings;
+
+    SessionKeyManager sessionKeyManager;
 
     MockCondition mockCondition;
     IERC20 usdc = IERC20(USDC);
@@ -46,6 +49,8 @@ contract AutoSaveTest is MainnetTest, RhinestoneModuleKit {
         payer = makeAddr("payer");
         // Setup account
         instance = makeRhinestoneAccount("1");
+
+        sessionKeyManager = new SessionKeyManager();
         vm.deal(instance.account, 10 ether);
 
         registry = new MockRegistry();
@@ -62,6 +67,7 @@ contract AutoSaveTest is MainnetTest, RhinestoneModuleKit {
 
         // Add executor to account
         instance.addExecutor(address(autoSavings));
+        instance.addValidator(address(sessionKeyManager));
     }
 
     function mockPaymentEvent(uint256 amount) internal {
