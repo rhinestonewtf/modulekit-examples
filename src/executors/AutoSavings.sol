@@ -10,6 +10,8 @@ import "checknsignatures/CheckNSignatures.sol";
 import "forge-std/console2.sol";
 import "../validators/SessionKey/ISessionKeyValidationModule.sol";
 
+import "solady/utils/LibSort.sol";
+
 struct TokenTxEvent {
     address token;
     address from;
@@ -20,6 +22,7 @@ struct TokenTxEvent {
 contract AutoSavings is ConditionalExecutor, ISessionKeyValidationModule {
     using ModuleExecLib for IExecutorManager;
     using ERC4626Deposit for IERC4626;
+    using LibSort for address[];
 
     struct SavingsConfig {
         IERC4626 vault;
@@ -29,14 +32,24 @@ contract AutoSavings is ConditionalExecutor, ISessionKeyValidationModule {
         uint256 maxFee;
     }
 
+    struct AuthorizedRelay {
+        address[] authorizedSigners;
+        uint256 threshold;
+    }
+
     mapping(address account => mapping(bytes32 id => SavingsConfig)) public savingsConfig;
 
-    mapping(address account => address) authorizedRelay;
+    mapping(address account => AuthorizedRelay) authorizedRelay;
 
     error InvalidConfig(address account, bytes32 id);
     error SavingNotDue(address account, bytes32 id);
+    error InvalidTarget();
+    error InvalidAmount();
+    error InvalidToken();
+    error InvalidTxEventTo();
+    error InvalidFunctionSelector();
 
-    event AutoSavings(
+    event AutoSavingsTx(
         bytes32 id,
         address vault,
         address spendToken,
@@ -44,6 +57,7 @@ contract AutoSavings is ConditionalExecutor, ISessionKeyValidationModule {
         uint256 amountReceived,
         uint256 amountSaved
     );
+    event NewRelayer(address account, address[] relayer, uint256 threshold);
 
     constructor(ComposableConditionManager _conditionManager)
         ConditionalExecutor(_conditionManager)
@@ -101,7 +115,7 @@ contract AutoSavings is ConditionalExecutor, ISessionKeyValidationModule {
             amount: amountIn
         });
 
-        emit AutoSavings({
+        emit AutoSavingsTx({
             id: id,
             vault: address(config.vault),
             spendToken: address(spendToken),
@@ -111,8 +125,16 @@ contract AutoSavings is ConditionalExecutor, ISessionKeyValidationModule {
         });
     }
 
-    function setRelayer(address relayer) external {
-        authorizedRelay[msg.sender] = relayer;
+    function setRelayer(address[] memory relayer, uint256 threshold) external {
+        relayer.uniquifySorted();
+
+        if (relayer.length < threshold) revert InvalidConfig(msg.sender, 0);
+
+        AuthorizedRelay storage authorizedRelayRecord = authorizedRelay[msg.sender];
+        authorizedRelayRecord.threshold = threshold;
+        authorizedRelayRecord.authorizedSigners = relayer;
+
+        emit NewRelayer(msg.sender, relayer, threshold);
     }
 
     function setConfig(
@@ -142,7 +164,7 @@ contract AutoSavings is ConditionalExecutor, ISessionKeyValidationModule {
         returns (bool)
     {
         {
-            if (address(this) != address(bytes20(_op.callData[48:68]))) revert("Invalid target");
+            if (address(this) != address(bytes20(_op.callData[48:68]))) revert InvalidTarget();
         }
 
         bytes calldata triggerCallData = (_op.callData[228:]);
@@ -153,20 +175,31 @@ contract AutoSavings is ConditionalExecutor, ISessionKeyValidationModule {
             uint256 amountIn = uint256(bytes32(triggerCallData[100:132]));
 
             tokenTxEvent = abi.decode(_sessionKeyData, (TokenTxEvent));
-            if (tokenTxEvent.amount != amountIn) revert("Invalid amount");
-            if (tokenTxEvent.token != spendToken) revert("Invalid token");
-            if (functionSig != this.trigger.selector) revert();
+            if (tokenTxEvent.amount != amountIn) revert InvalidAmount();
+            if (tokenTxEvent.token != spendToken) revert InvalidToken();
+            if (functionSig != this.trigger.selector) revert InvalidFunctionSelector();
 
-            if (tokenTxEvent.to != _op.sender) revert("Invalid Tx event to field");
+            if (tokenTxEvent.to != _op.sender) revert InvalidTxEventTo();
         }
 
-        address[] memory signers =
-            CheckSignatures.recoverNSignatures(keccak256(_sessionKeyData), _sessionKeySignature, 1);
-        if (signers[0] != authorizedRelay[_op.sender] && signers[0] != tokenTxEvent.to) {
-            return false;
+        address[] memory recoveredSigners = CheckSignatures.recoverNSignatures({
+            dataHash: keccak256(_sessionKeyData),
+            signatures: _sessionKeySignature,
+            requiredSignatures: 1
+        });
+
+        recoveredSigners.uniquifySorted();
+
+        AuthorizedRelay storage authorizedRelayRecord = authorizedRelay[_op.sender];
+
+        address[] memory authorizedRecoveredSigners =
+            recoveredSigners.intersection(authorizedRelayRecord.authorizedSigners);
+
+        if (authorizedRecoveredSigners.length >= authorizedRelayRecord.threshold) {
+            return true;
         }
 
-        return true;
+        return false;
     }
 
     function name() external view override returns (string memory name) { }

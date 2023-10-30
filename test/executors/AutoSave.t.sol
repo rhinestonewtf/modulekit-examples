@@ -48,19 +48,29 @@ contract AutoSaveTest is MainnetTest, RhinestoneModuleKit, CheckNSignaturesFound
 
     address payer;
 
-    address relayer;
-    uint256 relayerPk;
+    address[] relayerAddresses;
+    uint256[] relayerPks;
+
+    function _genSigners(uint256 n) internal {
+        relayerAddresses = new address[](n);
+        relayerPks = new uint256[](n);
+
+        uint256 offset = 1337;
+        for (uint256 i; i < n; i++) {
+            relayerAddresses[i] = vm.addr(i + offset);
+            relayerPks[i] = i + offset;
+        }
+    }
 
     function setUp() public override {
         super.setUp();
 
         m = new Merkle();
 
+        _genSigners(3);
         payer = makeAddr("payer");
         // Setup account
         instance = makeRhinestoneAccount("1");
-
-        (relayer, relayerPk) = makeAddrAndKey("relayer");
 
         sessionKeyManager = new SessionKeyManager();
         vm.deal(instance.account, 10 ether);
@@ -119,7 +129,7 @@ contract AutoSaveTest is MainnetTest, RhinestoneModuleKit, CheckNSignaturesFound
         mockPaymentEvent(0x41414141);
         vm.startPrank(instance.account);
 
-        autoSavings.setRelayer(relayer);
+        autoSavings.setRelayer(relayerAddresses, relayerAddresses.length);
 
         bytes32[] memory proof = mockSetSessionKey(address(autoSavings), "");
 
@@ -143,7 +153,7 @@ contract AutoSaveTest is MainnetTest, RhinestoneModuleKit, CheckNSignaturesFound
             sessionKeySignature: ""
         });
 
-        sessionKeyParams.sessionKeySignature = sign(relayerPk, sessionKeyParams.sessionKeyData);
+        sessionKeyParams.sessionKeySignature = sign(relayerPks, sessionKeyParams.sessionKeyData);
 
         console2.log("address autoSavings", address(autoSavings));
 
