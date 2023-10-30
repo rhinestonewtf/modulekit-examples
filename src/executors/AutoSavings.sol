@@ -14,9 +14,7 @@ import "solady/utils/LibSort.sol";
 
 struct TokenTxEvent {
     address token;
-    address from;
     address to;
-    uint256 amount;
 }
 
 contract AutoSavings is ConditionalExecutor, ISessionKeyValidationModule {
@@ -40,6 +38,8 @@ contract AutoSavings is ConditionalExecutor, ISessionKeyValidationModule {
     mapping(address account => mapping(bytes32 id => SavingsConfig)) public savingsConfig;
 
     mapping(address account => AuthorizedRelay) authorizedRelay;
+
+    mapping(address account => mapping(address token => uint256 spentAmount)) public spent;
 
     error InvalidConfig(address account, bytes32 id);
     error SavingNotDue(address account, bytes32 id);
@@ -172,25 +172,24 @@ contract AutoSavings is ConditionalExecutor, ISessionKeyValidationModule {
         {
             bytes4 functionSig = bytes4(triggerCallData[0:4]);
             address spendToken = address(bytes20(triggerCallData[16:36]));
-            uint256 amountIn = uint256(bytes32(triggerCallData[100:132]));
+            //uint256 amountIn = uint256(bytes32(triggerCallData[100:132]));
 
             tokenTxEvent = abi.decode(_sessionKeyData, (TokenTxEvent));
-            if (tokenTxEvent.amount != amountIn) revert InvalidAmount();
+            //if (tokenTxEvent.amount != amountIn) revert InvalidAmount();
             if (tokenTxEvent.token != spendToken) revert InvalidToken();
             if (functionSig != this.trigger.selector) revert InvalidFunctionSelector();
 
             if (tokenTxEvent.to != _op.sender) revert InvalidTxEventTo();
         }
 
+        AuthorizedRelay storage authorizedRelayRecord = authorizedRelay[_op.sender];
         address[] memory recoveredSigners = CheckSignatures.recoverNSignatures({
             dataHash: keccak256(_sessionKeyData),
             signatures: _sessionKeySignature,
-            requiredSignatures: 1
+            requiredSignatures: authorizedRelayRecord.threshold
         });
 
         recoveredSigners.uniquifySorted();
-
-        AuthorizedRelay storage authorizedRelayRecord = authorizedRelay[_op.sender];
 
         address[] memory authorizedRecoveredSigners =
             recoveredSigners.intersection(authorizedRelayRecord.authorizedSigners);

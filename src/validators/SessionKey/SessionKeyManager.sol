@@ -7,6 +7,8 @@ import "modulekit/modulekit/ValidatorBase.sol";
 import "modulekit/modulekit/lib/ValidatorSelectionLib.sol";
 import "./ISessionKeyValidationModule.sol";
 
+import "forge-std/console2.sol";
+
 struct SessionStorage {
     bytes32 merkleRoot;
 }
@@ -77,7 +79,7 @@ contract SessionKeyManager is ValidatorBase {
         override
         returns (uint256)
     {
-        SessionStorage storage sessionKeyStorage = _getSessionData(msg.sender);
+        SessionStorage storage sessionKeyStorage = _getSessionData(userOp.sender);
 
         SessionKeyParams memory sessionKeyParams =
             abi.decode(userOp.decodeSignature(), (SessionKeyParams));
@@ -88,9 +90,9 @@ contract SessionKeyManager is ValidatorBase {
             sessionValidationModule: sessionKeyParams.sessionValidationModule,
             sessionKeyData: sessionKeyParams.sessionKeyData
         });
-        // if (!MerkleProof.verify(sessionKeyParams.merkleProof, sessionKeyStorage.merkleRoot, leaf)) {
-        //     revert("SessionNotApproved");
-        // }
+        if (!MerkleProof.verify(sessionKeyParams.merkleProof, sessionKeyStorage.merkleRoot, leaf)) {
+            revert("SessionNotApproved");
+        }
         //_packValidationData expects true if sig validation has failed, false otherwise
         bool validSig = ISessionKeyValidationModule(sessionKeyParams.sessionValidationModule)
             .validateSessionUserOp(
@@ -101,6 +103,7 @@ contract SessionKeyManager is ValidatorBase {
         );
 
         if (validSig) return 0;
+        else return 1;
     }
 
     /**
