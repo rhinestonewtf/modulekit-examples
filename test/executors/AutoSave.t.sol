@@ -35,8 +35,6 @@ contract AutoSaveTest is MainnetTest, RhinestoneModuleKit, CheckNSignaturesFound
     ComposableConditionManager conditionManager;
     AutoSavings autoSavings;
 
-    SessionKeyManager sessionKeyManager;
-
     MockCondition mockCondition;
     IERC20 usdc = IERC20(USDC);
     IERC20 weth = IERC20(WETH);
@@ -72,7 +70,6 @@ contract AutoSaveTest is MainnetTest, RhinestoneModuleKit, CheckNSignaturesFound
         // Setup account
         instance = makeRhinestoneAccount("1");
 
-        sessionKeyManager = new SessionKeyManager();
         vm.deal(instance.account, 10 ether);
 
         registry = new MockRegistry();
@@ -89,100 +86,71 @@ contract AutoSaveTest is MainnetTest, RhinestoneModuleKit, CheckNSignaturesFound
 
         // Add executor to account
         instance.addExecutor(address(autoSavings));
-        instance.addValidator(address(sessionKeyManager));
     }
 
-    function mockSetSessionKey(
-        address sessionKeyValidator,
-        bytes memory sessionKeyData
-    )
-        internal
-        view
-        returns (bytes32 root, bytes32[] memory proof)
-    {
-        bytes32[] memory leaves = new bytes32[](4);
-        leaves[0] = "asdf";
-        leaves[1] = sessionKeyManager._sessionMerkelLeaf(
-            0, 180_000_000, sessionKeyValidator, sessionKeyData
-        );
-        leaves[2] = "asdf";
-        leaves[3] = "asdf";
-
-        root = m.getRoot(leaves);
-        console2.logBytes32(root);
-
-        proof = m.getProof(leaves, 1);
-        console2.log("valid proof", m.verifyProof(root, proof, leaves[1]));
-        console2.log("--------------");
-        console2.log("proof");
-        console2.logBytes32(keccak256(abi.encode(proof)));
-        console2.log("leaf");
-        console2.logBytes32(leaves[1]);
-        console2.log("root");
-        console2.logBytes32(root);
-    }
-
-    function mockPaymentEvent(uint256 amount) internal {
-        deal(USDC, payer, amount);
-
-        vm.prank(payer);
-        usdc.transfer(instance.account, amount);
-    }
-
-    function testTrigger() public {
-        uint256 amount = 0x41414141;
-        mockPaymentEvent(amount);
-        bytes memory savingsEvent =
-            abi.encode(TokenTxEvent({ token: address(usdc), to: instance.account }));
-        vm.startPrank(instance.account);
-
-        autoSavings.setRelayer(relayerAddresses, relayerAddresses.length);
-
-        ConditionConfig[] memory conditions = new ConditionConfig[](1);
+    function mockConditionConfig() internal view returns (ConditionConfig[] memory conditions) {
+        conditions = new ConditionConfig[](1);
         conditions[0] =
             ConditionConfig({ condition: ICondition(address(mockCondition)), conditionData: "" });
-        (bytes32 root, bytes32[] memory proof) =
-            mockSetSessionKey(address(autoSavings), savingsEvent);
+    }
 
-        sessionKeyManager.setMerkleRoot(root);
+    function testTrigger(uint256 amount) public {
+        vm.assume(amount > 10_000);
+        //metadata for session key
+        uint256 validUntil = 0;
+        uint256 validAfter = 180_000_000;
+        address tokenToSave = address(usdc);
+        bytes memory savingsEvent =
+            abi.encode(TokenTxEvent({ token: tokenToSave, to: instance.account }));
 
-        SessionKeyParams memory sessionKeyParams = SessionKeyParams({
-            validUntil: 0,
-            validAfter: 180_000_000,
-            sessionValidationModule: address(autoSavings),
-            sessionKeyData: savingsEvent,
-            merkleProof: proof,
-            sessionKeySignature: ""
-        });
-
-        sessionKeyParams.sessionKeySignature = sign(relayerPks, sessionKeyParams.sessionKeyData);
-
-        console2.log("address autoSavings", address(autoSavings));
-
+        vm.startPrank(instance.account);
+        ConditionConfig[] memory conditions = mockConditionConfig();
         conditionManager.setHash(address(autoSavings), conditions);
         autoSavings.setConfig({
             id: 0,
-            maxAmountIn: 0x41414141,
+            maxAmountIn: amount,
             feePercentage: 100,
             vault: IERC4626(address(vault))
         });
 
-        bytes memory encSignature = abi.encode(sessionKeyParams);
+        // user authorizes a specific relayer to trigger autosavings
+        autoSavings.setRelayer(relayerAddresses, relayerAddresses.length);
+        (, bytes32[] memory proof) = instance.addSessionKey({
+            validUntil: validUntil,
+            validAfter: validAfter,
+            sessionValidationModule: address(autoSavings),
+            sessionKeyData: savingsEvent
+        });
 
+        vm.stopPrank();
+
+        // simulate a ERC20 transfer
+        deal(tokenToSave, payer, amount);
+        vm.prank(payer);
+        usdc.transfer(instance.account, amount);
+
+        // prepare sessionKeyParams for SessionKeyManager
+        SessionKeyParams memory sessionKeyParams = SessionKeyParams({
+            validUntil: validUntil,
+            validAfter: validAfter,
+            sessionValidationModule: address(autoSavings),
+            sessionKeyData: savingsEvent,
+            merkleProof: proof,
+            sessionKeySignature: sign(relayerPks, savingsEvent) // sign with CheckNSignaturesFoundryHelper
+         });
+
+        // trigger 4337 exec
         instance.exec4337({
             target: address(autoSavings),
             value: 0,
             callData: abi.encodeCall(
                 autoSavings.trigger,
-                (
-                    usdc,
-                    IExecutorManager(address(instance.aux.executorManager)),
-                    0,
-                    0x41414141,
-                    conditions
-                )
+                (usdc, IExecutorManager(address(instance.aux.executorManager)), 0, amount, conditions)
                 ),
-            signature: ValidatorSelectionLib.encodeValidator(encSignature, address(sessionKeyManager))
+            signature: ValidatorSelectionLib.encodeValidator({
+                signature: abi.encode(sessionKeyParams),
+                chosenValidator: address(sessionKeyManager)
+            })
         });
     }
 }
