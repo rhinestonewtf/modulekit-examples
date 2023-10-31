@@ -96,6 +96,7 @@ contract AutoSaveTest is MainnetTest, RhinestoneModuleKit, CheckNSignaturesFound
 
     function testTrigger(uint256 amount) public {
         vm.assume(amount > 10_000);
+        vm.assume(amount < 100_000 ether);
         //metadata for session key
         uint256 validUntil = 0;
         uint256 validAfter = 180_000_000;

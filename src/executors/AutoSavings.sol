@@ -7,7 +7,6 @@ import "modulekit/modulekit/integrations/erc4626/ERC4626Deposit.sol";
 import "modulekit/modulekit/interfaces/IExecutor.sol";
 import "checknsignatures/CheckNSignatures.sol";
 
-import "forge-std/console2.sol";
 import "../validators/SessionKey/ISessionKeyValidationModule.sol";
 
 import "solady/utils/LibSort.sol";
@@ -75,12 +74,9 @@ contract AutoSavings is ConditionalExecutor, ISessionKeyValidationModule {
 
         uint256 amountIn = config.feePercentage * amountTransfered / 10_000;
         if (amountIn > config.maxAmountIn) revert InvalidConfig(msg.sender, id);
-        console2.log("Transfered: token %s, amount %s", address(spendToken), amountTransfered);
-        console2.log("same token to be saved after percentage : %s", amountIn);
 
         // check of swap is required
         IERC20 vaultToken = IERC20(config.vault.asset());
-        console2.log("vaultToken", address(vaultToken));
         if (vaultToken != spendToken) {
             uint256 amountOut = vaultToken.balanceOf(msg.sender);
 
@@ -102,8 +98,6 @@ contract AutoSavings is ConditionalExecutor, ISessionKeyValidationModule {
 
             amountIn = vaultToken.balanceOf(msg.sender) - amountOut;
         }
-
-        console2.log("Saving token: %s, amount  %s", address(vaultToken), amountIn);
 
         // // deposit into vault
         config.vault.approveAndDeposit({
