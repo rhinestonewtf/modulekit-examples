@@ -39,8 +39,6 @@ contract AutoSavings is ConditionalExecutor, ISessionKeyValidationModule {
 
     mapping(address account => AuthorizedRelay) authorizedRelay;
 
-    mapping(address account => mapping(address token => uint256 spentAmount)) public spent;
-
     error InvalidConfig(address account, bytes32 id);
     error SavingNotDue(address account, bytes32 id);
     error InvalidTarget();
