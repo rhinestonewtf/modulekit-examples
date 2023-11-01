@@ -2,6 +2,7 @@
 pragma solidity ^0.8.19;
 
 import { Test } from "forge-std/Test.sol";
+import { Denominations } from "modulekit/modulekit/integrations/Denominations.sol";
 import {
     RhinestoneModuleKit,
     RhinestoneModuleKitLib,
