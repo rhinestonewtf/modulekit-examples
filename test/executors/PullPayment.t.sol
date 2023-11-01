@@ -43,7 +43,7 @@ contract PullPaymentTest is Test, RhinestoneModuleKit {
         // Set up withdrawal
         address beneficiary = makeAddr("beneficiary");
         uint256 value = 100;
-        address tokenAddress = address(0);
+        address tokenAddress = Denominations.ETH;
         uint16 frequency = 1;
         instance.exec4337({
             target: address(pullPayment),
