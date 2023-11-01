@@ -62,7 +62,7 @@ contract PullPayment is ExecutorBase {
             action = ExecutorAction({ to: beneficiary, data: "", value: withdrawal.amount });
         } else {
             action = ERC20ModuleKit.transferAction({
-                token: IERC20(withdrawal.tokenAddress),
+                token: IERC20(tokenAddress),
                 to: beneficiary,
                 amount: withdrawal.amount
             });
