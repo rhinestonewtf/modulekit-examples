@@ -56,19 +56,20 @@ contract PullPayment is ExecutorBase {
 
         ExecutorAction memory action;
 
+        address payable beneficiary = withdrawal.beneficiary;
+
         if (tokenAddress == Denominations.ETH) {
-            action =
-                ExecutorAction({ to: withdrawal.beneficiary, data: "", value: withdrawal.amount });
+            action = ExecutorAction({ to: beneficiary, data: "", value: withdrawal.amount });
         } else {
             action = ERC20ModuleKit.transferAction({
                 token: IERC20(withdrawal.tokenAddress),
-                to: withdrawal.beneficiary,
+                to: beneficiary,
                 amount: withdrawal.amount
             });
         }
         manager.exec(account, action);
 
-        emit WithdrawalExecuted(account, withdrawal.beneficiary, withdrawalIndex);
+        emit WithdrawalExecuted(account, beneficiary, withdrawalIndex);
     }
 
     function setRelayer(address relayer) external {
