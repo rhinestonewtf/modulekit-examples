@@ -35,6 +35,7 @@ contract PullPayment is ExecutorBase {
 
     error OnlyRelayer();
     error WithdrawalNotDue(address account);
+    error InvalidConfig();
 
     function executeWithdrawal(
         IExecutorManager manager,
@@ -85,6 +86,9 @@ contract PullPayment is ExecutorBase {
         external
         returns (uint256 index)
     {
+        if (tokenAddress == address(0)) revert InvalidConfig();
+        if (beneficiary == address(0)) revert InvalidConfig();
+        if (frequency == 0) revert InvalidConfig();
         index = withdrawals[msg.sender].length;
         withdrawals[msg.sender].push(
             Withdrawal({
@@ -98,10 +102,12 @@ contract PullPayment is ExecutorBase {
         emit WithdrawalScheduled(msg.sender, beneficiary, index);
     }
 
+    function removeWithdrawal(uint256 index) external {
+        // NOT IMPLEMENTED. THIS EXECUTOR IS JUST AN EXAMPLE.
+    }
+
     function _withdrawalIsDue(Withdrawal storage withdrawal) internal view returns (bool) {
-        uint16 frequency = withdrawal.frequency;
-        if (frequency == 0) return false;
-        return block.timestamp > withdrawal.lastExecuted + frequency * 1 days;
+        return block.timestamp > withdrawal.lastExecuted + withdrawal.frequency * 1 days;
     }
 
     modifier onlyRelayer(address account) {
