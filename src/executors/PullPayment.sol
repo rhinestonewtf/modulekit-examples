@@ -31,6 +31,8 @@ contract PullPayment is ExecutorBase {
 
     event WithdrawalExecuted(address indexed account, address indexed beneficiary, uint256 index);
 
+    event RelayerSet(address indexed account, address indexed relayer);
+
     error OnlyRelayer();
     error WithdrawalNotDue(address account);
 
@@ -70,6 +72,8 @@ contract PullPayment is ExecutorBase {
 
     function setRelayer(address relayer) external {
         relayers[msg.sender] = relayer;
+
+        emit RelayerSet(msg.sender, relayer);
     }
 
     function addWithdrawal(
