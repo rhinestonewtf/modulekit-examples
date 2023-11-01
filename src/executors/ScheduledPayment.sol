@@ -13,7 +13,7 @@ import {
 import { ERC20ModuleKit } from "modulekit/modulekit/integrations/ERC20Actions.sol";
 import { IERC20 } from "forge-std/interfaces/IERC20.sol";
 
-struct Withdrawal {
+struct Payment {
     address payable beneficiary;
     uint256 amount;
     address tokenAddress;
@@ -21,54 +21,54 @@ struct Withdrawal {
     uint48 lastExecuted;
 }
 
-contract PullPayment is ExecutorBase {
+contract ScheduledPayment is ExecutorBase {
     using ModuleExecLib for IExecutorManager;
 
     mapping(address account => address relayer) public relayers;
-    mapping(address account => Withdrawal[] withdrawals) public withdrawals;
+    mapping(address account => Payment[] payment) public payments;
 
-    event WithdrawalScheduled(address indexed account, address indexed beneficiary, uint256 index);
+    event PaymentScheduled(address indexed account, address indexed beneficiary, uint256 index);
 
-    event WithdrawalExecuted(address indexed account, address indexed beneficiary, uint256 index);
+    event PaymentExecuted(address indexed account, address indexed beneficiary, uint256 index);
 
     event RelayerSet(address indexed account, address indexed relayer);
 
     error OnlyRelayer();
-    error WithdrawalNotDue(address account);
+    error PaymentNotDue(address account);
     error InvalidConfig();
 
-    function executeWithdrawal(
+    function executePayment(
         IExecutorManager manager,
         address account,
-        uint256 withdrawalIndex
+        uint256 paymentIndex
     )
         external
         onlyRelayer(account)
     {
-        Withdrawal storage withdrawal = withdrawals[account][withdrawalIndex];
+        Payment storage payment = payments[account][paymentIndex];
 
-        if (!_withdrawalIsDue(withdrawal)) {
-            revert WithdrawalNotDue(account);
+        if (!_paymentIsDue(payment)) {
+            revert PaymentNotDue(account);
         }
-        address tokenAddress = withdrawal.tokenAddress;
-        withdrawal.lastExecuted = uint48(block.timestamp);
+        address tokenAddress = payment.tokenAddress;
+        payment.lastExecuted = uint48(block.timestamp);
 
         ExecutorAction memory action;
 
-        address payable beneficiary = withdrawal.beneficiary;
+        address payable beneficiary = payment.beneficiary;
 
         if (tokenAddress == Denominations.ETH) {
-            action = ExecutorAction({ to: beneficiary, data: "", value: withdrawal.amount });
+            action = ExecutorAction({ to: beneficiary, data: "", value: payment.amount });
         } else {
             action = ERC20ModuleKit.transferAction({
                 token: IERC20(tokenAddress),
                 to: beneficiary,
-                amount: withdrawal.amount
+                amount: payment.amount
             });
         }
         manager.exec(account, action);
 
-        emit WithdrawalExecuted(account, beneficiary, withdrawalIndex);
+        emit PaymentExecuted(account, beneficiary, paymentIndex);
     }
 
     function setRelayer(address relayer) external {
@@ -77,7 +77,7 @@ contract PullPayment is ExecutorBase {
         emit RelayerSet(msg.sender, relayer);
     }
 
-    function addWithdrawal(
+    function addPayment(
         address payable beneficiary,
         uint256 amount,
         address tokenAddress,
@@ -89,9 +89,9 @@ contract PullPayment is ExecutorBase {
         if (tokenAddress == address(0)) revert InvalidConfig();
         if (beneficiary == address(0)) revert InvalidConfig();
         if (frequency == 0) revert InvalidConfig();
-        index = withdrawals[msg.sender].length;
-        withdrawals[msg.sender].push(
-            Withdrawal({
+        index = payments[msg.sender].length;
+        payments[msg.sender].push(
+            Payment({
                 beneficiary: beneficiary,
                 amount: amount,
                 tokenAddress: tokenAddress,
@@ -99,15 +99,15 @@ contract PullPayment is ExecutorBase {
                 lastExecuted: uint48(block.timestamp)
             })
         );
-        emit WithdrawalScheduled(msg.sender, beneficiary, index);
+        emit PaymentScheduled(msg.sender, beneficiary, index);
     }
 
-    function removeWithdrawal(uint256 index) external {
+    function removePayment(uint256 index) external {
         // NOT IMPLEMENTED. THIS EXECUTOR IS JUST AN EXAMPLE.
     }
 
-    function _withdrawalIsDue(Withdrawal storage withdrawal) internal view returns (bool) {
-        return block.timestamp > withdrawal.lastExecuted + withdrawal.frequency * 1 days;
+    function _paymentIsDue(Payment storage payment) internal view returns (bool) {
+        return block.timestamp > payment.lastExecuted + payment.frequency * 1 days;
     }
 
     modifier onlyRelayer(address account) {
