@@ -88,21 +88,16 @@ contract PullPayment is ExecutorBase {
                 amount: amount,
                 tokenAddress: tokenAddress,
                 frequency: frequency,
-                lastExecuted: 0
+                lastExecuted: uint48(block.timestamp)
             })
         );
         emit WithdrawalScheduled(msg.sender, beneficiary, index);
     }
 
     function _withdrawalIsDue(Withdrawal storage withdrawal) internal view returns (bool) {
-        // Question: should we initially set lastExecuted to block.timestamp so that first execution occurs on setup time + frequency?
-        if (withdrawal.lastExecuted == 0) {
-            return true;
-        } else if (withdrawal.frequency == 0) {
-            return false;
-        } else {
-            return block.timestamp > withdrawal.lastExecuted + withdrawal.frequency * 1 days;
-        }
+        uint16 frequency = withdrawal.frequency;
+        if (frequency == 0) return false;
+        return block.timestamp > withdrawal.lastExecuted + frequency * 1 days;
     }
 
     modifier onlyRelayer(address account) {

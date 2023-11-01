@@ -54,7 +54,7 @@ contract PullPaymentTest is Test, RhinestoneModuleKit {
         });
 
         // Execute withdrawal
-        vm.warp(1 days);
+        vm.warp(2 days);
         vm.prank(relayer);
         pullPayment.executeWithdrawal({
             manager: IExecutorManager(address(instance.aux.executorManager)),
