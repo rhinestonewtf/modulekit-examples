@@ -15,7 +15,7 @@ import { IERC20 } from "forge-std/interfaces/IERC20.sol";
 
 struct Withdrawal {
     address payable beneficiary;
-    uint256 value;
+    uint256 amount;
     address tokenAddress;
     uint16 frequency; // in days
     uint48 lastExecuted;
@@ -48,19 +48,19 @@ contract PullPayment is ExecutorBase {
             revert WithdrawalNotDue(account);
         }
         address tokenAddress = withdrawal.tokenAddress;
-        if (tokenAddress != address(0)) revert WithdrawalNotDue(account);
+        if (tokenAddress == address(0)) revert WithdrawalNotDue(account);
         withdrawal.lastExecuted = uint48(block.timestamp);
 
         ExecutorAction memory action;
 
         if (tokenAddress == Denominations.ETH) {
             action =
-                ExecutorAction({ to: withdrawal.beneficiary, data: "", value: withdrawal.value });
+                ExecutorAction({ to: withdrawal.beneficiary, data: "", value: withdrawal.amount });
         } else {
             action = ERC20ModuleKit.transferAction({
                 token: IERC20(withdrawal.tokenAddress),
                 to: withdrawal.beneficiary,
-                amount: withdrawal.value
+                amount: withdrawal.amount
             });
         }
         manager.exec(account, action);
@@ -74,7 +74,7 @@ contract PullPayment is ExecutorBase {
 
     function addWithdrawal(
         address payable beneficiary,
-        uint256 value,
+        uint256 amount,
         address tokenAddress,
         uint16 frequency
     )
@@ -85,7 +85,7 @@ contract PullPayment is ExecutorBase {
         withdrawals[msg.sender].push(
             Withdrawal({
                 beneficiary: beneficiary,
-                value: value,
+                amount: amount,
                 tokenAddress: tokenAddress,
                 frequency: frequency,
                 lastExecuted: 0
