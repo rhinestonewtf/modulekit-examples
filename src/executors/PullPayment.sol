@@ -51,7 +51,6 @@ contract PullPayment is ExecutorBase {
             revert WithdrawalNotDue(account);
         }
         address tokenAddress = withdrawal.tokenAddress;
-        if (tokenAddress == address(0)) revert WithdrawalNotDue(account);
         withdrawal.lastExecuted = uint48(block.timestamp);
 
         ExecutorAction memory action;
