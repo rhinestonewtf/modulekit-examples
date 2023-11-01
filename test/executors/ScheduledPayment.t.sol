@@ -2,19 +2,20 @@
 pragma solidity ^0.8.19;
 
 import { Test } from "forge-std/Test.sol";
+import { Denominations } from "modulekit/modulekit/integrations/Denominations.sol";
 import {
     RhinestoneModuleKit,
     RhinestoneModuleKitLib,
     RhinestoneAccount
 } from "modulekit/test/utils/safe-base/RhinestoneModuleKit.sol";
 
-import { PullPayment, IExecutorManager } from "../../src/executors/PullPayment.sol";
+import { ScheduledPayment, IExecutorManager } from "../../src/executors/ScheduledPayment.sol";
 
-contract PullPaymentTest is Test, RhinestoneModuleKit {
+contract ScheduledPaymentTest is Test, RhinestoneModuleKit {
     using RhinestoneModuleKitLib for RhinestoneAccount;
 
     RhinestoneAccount instance;
-    PullPayment pullPayment;
+    ScheduledPayment scheduledPayment;
 
     string constant keySalt = "0";
     string constant keyName = "key";
@@ -25,43 +26,43 @@ contract PullPaymentTest is Test, RhinestoneModuleKit {
         vm.deal(instance.account, 10 ether);
 
         // Setup executor
-        pullPayment = new PullPayment();
+        scheduledPayment = new ScheduledPayment();
 
         // Add executor to account
-        instance.addExecutor(address(pullPayment));
+        instance.addExecutor(address(scheduledPayment));
     }
 
-    function testExecuteWithdrawal() public {
+    function testExecutePayment() public {
         // Set relayer
         address relayer = makeAddr("relayer");
         instance.exec4337({
-            target: address(pullPayment),
-            callData: abi.encodeWithSelector(PullPayment.setRelayer.selector, relayer)
+            target: address(scheduledPayment),
+            callData: abi.encodeWithSelector(scheduledPayment.setRelayer.selector, relayer)
         });
-        assertEq(pullPayment.relayers(instance.account), relayer);
+        assertEq(scheduledPayment.relayers(instance.account), relayer);
 
-        // Set up withdrawal
+        // Set up payment
         address beneficiary = makeAddr("beneficiary");
         uint256 value = 100;
-        address tokenAddress = address(0);
+        address tokenAddress = Denominations.ETH;
         uint16 frequency = 1;
         instance.exec4337({
-            target: address(pullPayment),
+            target: address(scheduledPayment),
             callData: abi.encodeWithSelector(
-                PullPayment.addWithdrawal.selector, beneficiary, value, tokenAddress, frequency
+                ScheduledPayment.addPayment.selector, beneficiary, value, tokenAddress, frequency
                 )
         });
 
-        // Execute withdrawal
-        vm.warp(1 days);
+        // Execute payment
+        vm.warp(2 days);
         vm.prank(relayer);
-        pullPayment.executeWithdrawal({
+        scheduledPayment.executePayment({
             manager: IExecutorManager(address(instance.aux.executorManager)),
             account: instance.account,
-            withdrawalIndex: 0
+            paymentIndex: 0
         });
 
-        // Check withdrawal
+        // Check payment
         assertEq(beneficiary.balance, value);
     }
 }
