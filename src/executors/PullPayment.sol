@@ -4,6 +4,7 @@ pragma solidity ^0.8.19;
 // Inspired by https://github.com/roleengineer/token-withdrawal-module/blob/master/src/TokenWithdrawalModule.sol
 
 import { ExecutorBase } from "modulekit/modulekit/ExecutorBase.sol";
+import { Denominations } from "modulekit/modulekit/integrations/Denominations.sol";
 import {
     IExecutorManager,
     ExecutorAction,
@@ -46,19 +47,21 @@ contract PullPayment is ExecutorBase {
         if (!_withdrawalIsDue(withdrawal)) {
             revert WithdrawalNotDue(account);
         }
+        address tokenAddress = withdrawal.tokenAddress;
+        if (tokenAddress != address(0)) revert WithdrawalNotDue(account);
         withdrawal.lastExecuted = uint48(block.timestamp);
 
         ExecutorAction memory action;
 
-        if (withdrawal.tokenAddress != address(0)) {
+        if (tokenAddress == Denominations.ETH) {
+            action =
+                ExecutorAction({ to: withdrawal.beneficiary, data: "", value: withdrawal.value });
+        } else {
             action = ERC20ModuleKit.transferAction({
                 token: IERC20(withdrawal.tokenAddress),
                 to: withdrawal.beneficiary,
                 amount: withdrawal.value
             });
-        } else {
-            action =
-                ExecutorAction({ to: withdrawal.beneficiary, data: "", value: withdrawal.value });
         }
         manager.exec(account, action);
 
