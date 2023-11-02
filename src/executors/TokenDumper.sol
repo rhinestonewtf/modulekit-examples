@@ -2,6 +2,7 @@
 pragma solidity ^0.8.21;
 
 import "modulekit/modulekit/interfaces/IHook.sol";
+import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 import "modulekit/core/ComposableCondition.sol";
 import "modulekit/modulekit/interfaces/IExecutor.sol";
 import "modulekit/modulekit/ValidatorBase.sol";
@@ -23,15 +24,14 @@ contract TokenDumper is ConditionalExecutor {
         uint16 feePercentage;
     }
 
-    mapping(address => SentinelListLib.SentinelList) private dumpList;
+    mapping(address => bytes32 root) private dumpList;
     mapping(address => TokenDumperConfig) private tokenDumperConfig;
 
     error InvalidToken();
     error InvalidAccount();
 
     event TokenDump(address indexed account, address indexed token, uint256 amount);
-    event NewHodlToken(address indexed account, address indexed token);
-    event RemoveHodlToken(address indexed account, address indexed token);
+    event NewHodlToken(address indexed account, bytes32 root);
     event NewTokenDumperConfig(
         address indexed account, address indexed baseToken, uint16 feePercentage
     );
@@ -40,32 +40,33 @@ contract TokenDumper is ConditionalExecutor {
         ConditionalExecutor(_conditionManager)
     { }
 
-    modifier onlyDumpTokens(address account, IERC20 token) {
-        _onlyDumpTokens(account, token);
+    modifier onlyDumpTokens(address account, IERC20 token, bytes32[] calldata merkleProof) {
+        _onlyDumpTokens(account, token, merkleProof);
         _;
     }
 
-    function _onlyDumpTokens(address account, IERC20 token) private view {
+    function _onlyDumpTokens(
+        address account,
+        IERC20 token,
+        bytes32[] calldata merkleProof
+    )
+        private
+        view
+    {
         if (address(token) == address(0)) revert InvalidToken();
-        if (!dumpList[account].contains(address(token))) revert InvalidToken();
-    }
-
-    function addDumpToken(IERC20 token) public {
-        dumpList[msg.sender].init();
-        dumpList[msg.sender].push(address(token));
-        emit NewHodlToken(msg.sender, address(token));
-    }
-
-    function addDumpToken(IERC20[] memory tokens) external {
-        uint256 length = tokens.length;
-        for (uint256 i; i < length; i++) {
-            addDumpToken(tokens[i]);
+        bytes32 merkleRoot = dumpList[account];
+        if (!MerkleProof.verify(merkleProof, merkleRoot, _tokenToMerkleLeaf(token))) {
+            revert("SessionNotApproved");
         }
     }
 
-    function removeHodlToken(IERC20 token, IERC20 prevToken) external {
-        dumpList[msg.sender].pop(address(prevToken), address(token));
-        emit RemoveHodlToken(msg.sender, address(token));
+    function _tokenToMerkleLeaf(IERC20 token) public pure returns (bytes32 leaf) {
+        leaf = keccak256(abi.encodePacked(token));
+    }
+
+    function addDumpToken(bytes32 root) public {
+        dumpList[msg.sender] = root;
+        emit NewHodlToken(msg.sender, root);
     }
 
     function setTokenDumperConfig(IERC20 baseToken, uint16 feePercentage) external {
@@ -103,10 +104,11 @@ contract TokenDumper is ConditionalExecutor {
         address account,
         IExecutorManager manager,
         IERC20 dumpToken,
+        bytes32[] calldata proof,
         ConditionConfig[] calldata conditions
     )
         external
-        onlyDumpTokens(account, dumpToken)
+        onlyDumpTokens(account, dumpToken, proof)
         onlyIfConditionsMet(account, conditions)
     {
         console2.log("dump");
