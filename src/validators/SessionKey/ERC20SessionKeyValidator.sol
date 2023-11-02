@@ -48,10 +48,11 @@ contract ERC20SessionValidationModule is ISessionKeyValidationModule {
         // check if the call is to the allowed recepient and amount is not more than allowed
         bytes calldata data;
         {
-            uint256 offset = uint256(bytes32(_op.callData[4 + 64:4 + 96]));
-            uint256 length = uint256(bytes32(_op.callData[4 + offset:4 + offset + 32]));
+            bytes calldata callData = _op.callData[4:];
+            uint256 offset = uint256(bytes32(callData[64:96]));
+            uint256 length = uint256(bytes32(callData[offset:offset + 32]));
             //we expect data to be the `IERC20.transfer` calldata
-            data = _op.callData[4 + offset + 32:4 + offset + 32 + length];
+            data = callData[offset + 32:offset + 32 + length];
         }
         if (address(bytes20(data[16:36])) != recipient) {
             revert("ERC20SV Wrong Recipient");
