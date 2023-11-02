@@ -84,7 +84,19 @@ contract TokenDumper is ConditionalExecutor {
         private
     {
         uint256 balance = dumpToken.balanceOf(account);
-        manager.exec(account, account.swapExactInputSingle(dumpToken, outToken, balance));
+        ExecutorAction[] memory swapActions = new ExecutorAction[](2);
+        swapActions[0] = ERC20ModuleKit.approveAction({
+            token: dumpToken,
+            to: SWAPROUTER_ADDRESS,
+            amount: balance
+        });
+        swapActions[1] = UniswapSwaps.swapExactInputSingle({
+            smartAccount: account, // beneficiary of the swap
+            tokenIn: dumpToken, // token to be sold
+            tokenOut: outToken, // token to be bought
+            amountIn: balance
+        });
+        manager.exec(account, swapActions);
     }
 
     function dump(
@@ -101,20 +113,25 @@ contract TokenDumper is ConditionalExecutor {
         TokenDumperConfig memory config = tokenDumperConfig[account];
         if (address(config.baseToken) == address(0)) revert InvalidAccount();
 
-        uint256 amountOut = dumpToken.balanceOf(account);
+        uint256 amountBefore = config.baseToken.balanceOf(account);
         _swap(account, manager, dumpToken, config.baseToken);
-        amountOut -= dumpToken.balanceOf(account);
+        console2.log("swap done");
+        uint256 amountAfter = config.baseToken.balanceOf(account) - amountBefore;
 
-        uint256 fee = (amountOut * config.feePercentage) / 10_000;
+        uint256 fee = (amountAfter * config.feePercentage) / 10_000;
 
         if (fee > 0) {
             manager.exec(
                 account,
-                ERC20ModuleKit.transferAction({ token: dumpToken, to: msg.sender, amount: fee })
+                ERC20ModuleKit.transferAction({
+                    token: config.baseToken,
+                    to: msg.sender,
+                    amount: fee
+                })
             );
         }
 
-        emit TokenDump(account, address(dumpToken), amountOut - fee);
+        emit TokenDump(account, address(dumpToken), amountAfter - fee);
     }
 
     function name() external view override returns (string memory name) { }

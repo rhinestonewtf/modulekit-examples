@@ -43,6 +43,10 @@ contract TokenDumperTest is MainnetTest, RhinestoneModuleKit {
         // setting up receiver address. This is the EOA that this test is sending funds to
         receiver = makeAddr("receiver");
         instance = makeRhinestoneAccount("1");
+        vm.label(instance.account, "account");
+
+        vm.label(WETH, "WETH");
+        vm.label(USDC, "USDC");
 
         registry = new MockRegistry();
         mockCondition = new MockCondition();
@@ -74,6 +78,6 @@ contract TokenDumperTest is MainnetTest, RhinestoneModuleKit {
             conditions: conditions
         });
 
-        assertTrue(IERC20(WETH).balanceOf(receiver) > 0);
+        assertTrue(IERC20(USDC).balanceOf(receiver) > 0);
     }
 }
