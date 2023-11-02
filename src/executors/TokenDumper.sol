@@ -104,23 +104,19 @@ contract TokenDumper is ConditionalExecutor {
         address account,
         IExecutorManager manager,
         IERC20 dumpToken,
-        bytes32[] calldata proof,
-        ConditionConfig[] calldata conditions
+        bytes32[] calldata proof
     )
         external
         onlyDumpTokens(account, dumpToken, proof)
-        onlyIfConditionsMet(account, conditions)
     {
-        console2.log("dump");
         TokenDumperConfig memory config = tokenDumperConfig[account];
         if (address(config.baseToken) == address(0)) revert InvalidAccount();
 
-        uint256 amountBefore = config.baseToken.balanceOf(account);
+        uint256 amount = config.baseToken.balanceOf(account);
         _swap(account, manager, dumpToken, config.baseToken);
-        console2.log("swap done");
-        uint256 amountAfter = config.baseToken.balanceOf(account) - amountBefore;
+        amount = config.baseToken.balanceOf(account) - amount;
 
-        uint256 fee = (amountAfter * config.feePercentage) / 10_000;
+        uint256 fee = (amount * config.feePercentage) / 10_000;
 
         if (fee > 0) {
             manager.exec(
@@ -133,7 +129,7 @@ contract TokenDumper is ConditionalExecutor {
             );
         }
 
-        emit TokenDump(account, address(dumpToken), amountAfter - fee);
+        emit TokenDump(account, address(dumpToken), amount - fee);
     }
 
     function name() external view override returns (string memory name) { }

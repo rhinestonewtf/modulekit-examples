@@ -3,6 +3,7 @@
 pragma solidity ^0.8.19;
 
 import "../MainnetFork.t.sol";
+import "murky/src/Merkle.sol";
 import {
     RhinestoneModuleKit,
     RhinestoneModuleKitLib,
@@ -65,7 +66,15 @@ contract TokenDumperTest is MainnetTest, RhinestoneModuleKit {
 
         // add USDC to protected hodl tokens
         vm.startPrank(instance.account);
-        tokenDumper.addDumpToken(IERC20(WETH));
+
+        Merkle m = new Merkle();
+        bytes32[] memory leaves = new bytes32[](2);
+        leaves[0] = "asdf";
+        leaves[1] = tokenDumper._tokenToMerkleLeaf(IERC20(WETH));
+
+        bytes32 root = m.getRoot(leaves);
+        bytes32[] memory proof = m.getProof(leaves, 1);
+        tokenDumper.addDumpToken(root);
         tokenDumper.setTokenDumperConfig({ baseToken: IERC20(USDC), feePercentage: 200 });
         conditionManager.setHash(address(tokenDumper), conditions);
         vm.stopPrank();
@@ -75,7 +84,7 @@ contract TokenDumperTest is MainnetTest, RhinestoneModuleKit {
             account: instance.account,
             manager: IExecutorManager(address(instance.aux.executorManager)),
             dumpToken: IERC20(WETH),
-            conditions: conditions
+            proof: proof
         });
 
         assertTrue(IERC20(USDC).balanceOf(receiver) > 0);
