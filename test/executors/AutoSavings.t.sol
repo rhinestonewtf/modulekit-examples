@@ -27,7 +27,7 @@ import "checknsignatures/CheckNSignaturesFoundryHelper.sol";
 address constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
 address constant USDC = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
 
-contract AutoSaveTest is MainnetTest, RhinestoneModuleKit, CheckNSignaturesFoundryHelper {
+contract AutoSavingsTest is MainnetTest, RhinestoneModuleKit, CheckNSignaturesFoundryHelper {
     using RhinestoneModuleKitLib for RhinestoneAccount;
 
     RhinestoneAccount instance;
@@ -97,7 +97,7 @@ contract AutoSaveTest is MainnetTest, RhinestoneModuleKit, CheckNSignaturesFound
     function testTrigger(uint256 amount) public {
         vm.assume(amount > 10_000);
         vm.assume(amount < 100_000 ether);
-        //metadata for session key
+        // metadata for session key
         uint256 validUntil = 0;
         uint256 validAfter = 180_000_000;
         address tokenToSave = address(usdc);
