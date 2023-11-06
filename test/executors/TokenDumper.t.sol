@@ -3,6 +3,7 @@
 pragma solidity ^0.8.19;
 
 import "../MainnetFork.t.sol";
+import "murky/src/Merkle.sol";
 import {
     RhinestoneModuleKit,
     RhinestoneModuleKitLib,
@@ -12,7 +13,7 @@ import {
 import { MockERC20 } from "solmate/test/utils/mocks/MockERC20.sol";
 import { MockERC721 } from "solmate/test/utils/mocks/MockERC721.sol";
 
-import "../../src/executors/TokenDumper.sol";
+import "../../src/executors/TokenDumperMerkle.sol";
 import "modulekit/test/mocks/MockExecutor.sol";
 import "modulekit/test/mocks/MockRegistry.sol";
 import "modulekit/test/mocks/MockCondition.sol";
@@ -20,6 +21,7 @@ import "modulekit/test/mocks/MockCondition.sol";
 import "forge-std/interfaces/IERC20.sol";
 import "modulekit/core/ComposableCondition.sol";
 import "modulekit/modulekit/conditions/ScheduleCondition.sol";
+import "modulekit/modulekit/conditions/MerkleTreeCondition.sol";
 import "modulekit/modulekit/integrations/uniswap/helpers/MainnetAddresses.sol";
 
 address constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
@@ -60,22 +62,39 @@ contract TokenDumperTest is MainnetTest, RhinestoneModuleKit {
     }
 
     function test_DumpToken() public {
+        // Prepare the merkle tree
+        Merkle m = new Merkle();
+        bytes32[] memory leaves = new bytes32[](2);
+        leaves[0] = "asdf";
+        leaves[1] = tokenDumper._tokenToMerkleLeaf(IERC20(WETH));
+        bytes32 root = m.getRoot(leaves);
+        bytes32[] memory proof = m.getProof(leaves, 1);
+        //-----------------
+
         ConditionConfig[] memory conditions = new ConditionConfig[](1);
-        conditions[0] = ConditionConfig({ condition: mockCondition, conditionData: "asdf" });
+        conditions[0] = ConditionConfig({
+            condition: mockCondition,
+            conditionData: abi.encode(MerkleTreeCondition.Params({ root: root }))
+        });
 
         // add USDC to protected hodl tokens
         vm.startPrank(instance.account);
-        tokenDumper.addDumpToken(IERC20(WETH));
+
         tokenDumper.setTokenDumperConfig({ baseToken: IERC20(USDC), feePercentage: 200 });
         conditionManager.setHash(address(tokenDumper), conditions);
         vm.stopPrank();
 
         vm.prank(receiver);
+        MerkleTreeCondition.MerkleParams memory subParams =
+            MerkleTreeCondition.MerkleParams({ proof: proof, leaf: leaves[1] });
+        bytes[] memory subParamsBytes = new bytes[](1);
+        subParamsBytes[0] = abi.encode(subParams);
         tokenDumper.dump({
             account: instance.account,
             manager: IExecutorManager(address(instance.aux.executorManager)),
             dumpToken: IERC20(WETH),
-            conditions: conditions
+            conditions: conditions,
+            subParams: subParamsBytes
         });
 
         assertTrue(IERC20(USDC).balanceOf(receiver) > 0);

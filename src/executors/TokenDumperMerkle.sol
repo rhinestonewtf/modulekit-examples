@@ -40,26 +40,6 @@ contract TokenDumper is ConditionalExecutor {
         ConditionalExecutor(_conditionManager)
     { }
 
-    modifier onlyDumpTokens(address account, IERC20 token, bytes32[] calldata merkleProof) {
-        _onlyDumpTokens(account, token, merkleProof);
-        _;
-    }
-
-    function _onlyDumpTokens(
-        address account,
-        IERC20 token,
-        bytes32[] calldata merkleProof
-    )
-        private
-        view
-    {
-        if (address(token) == address(0)) revert InvalidToken();
-        bytes32 merkleRoot = dumpList[account];
-        if (!MerkleProof.verify(merkleProof, merkleRoot, _tokenToMerkleLeaf(token))) {
-            revert("SessionNotApproved");
-        }
-    }
-
     function _tokenToMerkleLeaf(IERC20 token) public pure returns (bytes32 leaf) {
         leaf = keccak256(abi.encodePacked(token));
     }
@@ -104,11 +84,16 @@ contract TokenDumper is ConditionalExecutor {
         address account,
         IExecutorManager manager,
         IERC20 dumpToken,
-        bytes32[] calldata proof
+        ConditionConfig[] calldata conditions,
+        bytes[] calldata subParams
     )
         external
-        onlyDumpTokens(account, dumpToken, proof)
+        onlyIfConditionsAndParamsMet(account, conditions, subParams)
     {
+        _dump(account, manager, dumpToken);
+    }
+
+    function _dump(address account, IExecutorManager manager, IERC20 dumpToken) private {
         TokenDumperConfig memory config = tokenDumperConfig[account];
         if (address(config.baseToken) == address(0)) revert InvalidAccount();
 
@@ -128,7 +113,6 @@ contract TokenDumper is ConditionalExecutor {
                 })
             );
         }
-
         emit TokenDump(account, address(dumpToken), amount - fee);
     }
 
