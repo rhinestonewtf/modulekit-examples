@@ -159,7 +159,7 @@ contract AutoSavings is ConditionalExecutor, ISessionKeyValidationModule {
             if (address(this) != address(bytes20(_op.callData[48:68]))) revert InvalidTarget();
         }
 
-        bytes calldata triggerCallData = (_op.callData[228:]);
+        bytes calldata triggerCallData = (_op.callData[164:]);
         TokenTxEvent memory tokenTxEvent;
         {
             bytes4 functionSig = bytes4(triggerCallData[0:4]);
