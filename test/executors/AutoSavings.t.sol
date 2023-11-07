@@ -86,6 +86,7 @@ contract AutoSavingsTest is MainnetTest, RhinestoneModuleKit, CheckNSignaturesFo
 
         // Add executor to account
         instance.addExecutor(address(autoSavings));
+        instance.addValidator(address(autoSavings));
     }
 
     function mockConditionConfig() internal view returns (ConditionConfig[] memory conditions) {
