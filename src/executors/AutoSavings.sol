@@ -8,6 +8,7 @@ import "modulekit/modulekit/interfaces/IExecutor.sol";
 import "checknsignatures/CheckNSignatures.sol";
 
 import "../validators/SessionKey/ISessionKeyValidationModule.sol";
+import { ValidatorSelectionLib } from "modulekit/modulekit/lib/ValidatorSelectionLib.sol";
 
 import "solady/utils/LibSort.sol";
 
@@ -20,6 +21,7 @@ contract AutoSavings is ConditionalExecutor, ISessionKeyValidationModule {
     using ModuleExecLib for IExecutorManager;
     using ERC4626Deposit for IERC4626;
     using LibSort for address[];
+    using ValidatorSelectionLib for UserOperation;
 
     struct SavingsConfig {
         IERC4626 vault;
@@ -156,21 +158,18 @@ contract AutoSavings is ConditionalExecutor, ISessionKeyValidationModule {
         returns (bool)
     {
         {
-            if (address(this) != address(bytes20(_op.callData[48:68]))) revert InvalidTarget();
+            if (address(this) != _op.getUserOpTarget()) revert InvalidTarget();
         }
 
-        bytes calldata triggerCallData = (_op.callData[164:]);
+        (bytes4 functionSig, bytes calldata triggerCallData) = _op.getUserOpCallData();
         TokenTxEvent memory tokenTxEvent;
         {
-            bytes4 functionSig = bytes4(triggerCallData[0:4]);
-            address spendToken = address(bytes20(triggerCallData[16:36]));
-            //uint256 amountIn = uint256(bytes32(triggerCallData[100:132]));
+            address spendToken = address(bytes20(triggerCallData[12:32]));
 
             tokenTxEvent = abi.decode(_sessionKeyData, (TokenTxEvent));
-            //if (tokenTxEvent.amount != amountIn) revert InvalidAmount();
+
             if (tokenTxEvent.token != spendToken) revert InvalidToken();
             if (functionSig != this.trigger.selector) revert InvalidFunctionSelector();
-
             if (tokenTxEvent.to != _op.sender) revert InvalidTxEventTo();
         }
 
