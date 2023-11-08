@@ -7,7 +7,7 @@ import {
     RhinestoneModuleKit,
     RhinestoneModuleKitLib,
     RhinestoneAccount
-} from "modulekit/test/utils/safe-base/RhinestoneModuleKit.sol";
+} from "modulekit-multiaccount/multi.sol";
 import "modulekit/modulekit/interfaces/IExecutor.sol";
 
 import "modulekit/core/ComposableCondition.sol";
@@ -20,7 +20,7 @@ import "../MainnetFork.t.sol";
 import "murky/src/Merkle.sol";
 import { IERC4626 } from "modulekit/modulekit/integrations/interfaces/IERC4626.sol";
 import "forge-std/interfaces/IERC20.sol";
-import "../../src/validators/SessionKey/SessionKeyManager.sol";
+import "modulekit/core/SessionKeyManager.sol";
 
 import "checknsignatures/CheckNSignaturesFoundryHelper.sol";
 
@@ -86,7 +86,7 @@ contract AutoSavingsTest is MainnetTest, RhinestoneModuleKit, CheckNSignaturesFo
 
         // Add executor to account
         instance.addExecutor(address(autoSavings));
-        instance.addValidator(address(autoSavings));
+        instance.addValidator(address(instance.aux.sessionKeyManager));
     }
 
     function mockConditionConfig() internal view returns (ConditionConfig[] memory conditions) {
@@ -149,10 +149,12 @@ contract AutoSavingsTest is MainnetTest, RhinestoneModuleKit, CheckNSignaturesFo
                 autoSavings.trigger,
                 (usdc, IExecutorManager(address(instance.aux.executorManager)), 0, amount, conditions)
                 ),
-            signature: ValidatorSelectionLib.encodeValidator({
-                signature: abi.encode(sessionKeyParams),
-                chosenValidator: address(sessionKeyManager)
-            })
+            signature: abi.encode(sessionKeyParams),
+            validator: address(instance.aux.sessionKeyManager)
         });
+        // signature: ValidatorSelectionLib.encodeValidator({
+        //     signature: abi.encode(sessionKeyParams),
+        //     chosenValidator: address(sessionKeyManager)
+        // })
     }
 }

@@ -7,10 +7,11 @@ import "modulekit/modulekit/integrations/erc4626/ERC4626Deposit.sol";
 import "modulekit/modulekit/interfaces/IExecutor.sol";
 import "checknsignatures/CheckNSignatures.sol";
 
-import "../validators/SessionKey/ISessionKeyValidationModule.sol";
+import "modulekit/core/ISessionKeyValidationModule.sol";
 import { ValidatorSelectionLib } from "modulekit/modulekit/lib/ValidatorSelectionLib.sol";
 
 import "solady/utils/LibSort.sol";
+import "forge-std/console2.sol";
 
 struct TokenTxEvent {
     address token;
@@ -150,7 +151,9 @@ contract AutoSavings is ConditionalExecutor, ISessionKeyValidationModule {
         UserOperation calldata _op,
         bytes32 _userOpHash,
         bytes calldata _sessionKeyData,
-        bytes calldata _sessionKeySignature
+        bytes calldata _sessionKeySignature,
+        address target,
+        uint256 _offset
     )
         external
         view
@@ -158,10 +161,13 @@ contract AutoSavings is ConditionalExecutor, ISessionKeyValidationModule {
         returns (bool)
     {
         {
-            if (address(this) != _op.getUserOpTarget()) revert InvalidTarget();
+            if (address(this) != target) revert InvalidTarget();
         }
 
-        (bytes4 functionSig, bytes calldata triggerCallData) = _op.getUserOpCallData();
+        console2.log("autosave");
+        console2.logBytes4(this.trigger.selector);
+
+        (bytes4 functionSig, bytes calldata triggerCallData) = _op.getUserOpCallData(_offset);
         TokenTxEvent memory tokenTxEvent;
         {
             address spendToken = address(bytes20(triggerCallData[12:32]));

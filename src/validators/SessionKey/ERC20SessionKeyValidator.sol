@@ -1,7 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
-import { ISessionKeyValidationModule, UserOperation } from "./ISessionKeyValidationModule.sol";
+import {
+    ISessionKeyValidationModule,
+    UserOperation
+} from "modulekit/core/ISessionKeyValidationModule.sol";
 import { ECDSA } from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import { MessageHashUtils } from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 
@@ -19,7 +22,9 @@ contract ERC20SessionValidationModule is ISessionKeyValidationModule {
         UserOperation calldata _op,
         bytes32 _userOpHash,
         bytes calldata _sessionKeyData,
-        bytes calldata _sessionKeySignature
+        bytes calldata _sessionKeySignature,
+        address target,
+        uint256 offset
     )
         external
         view
