@@ -152,9 +152,5 @@ contract AutoSavingsTest is MainnetTest, RhinestoneModuleKit, CheckNSignaturesFo
             signature: abi.encode(sessionKeyParams),
             validator: address(instance.aux.sessionKeyManager)
         });
-        // signature: ValidatorSelectionLib.encodeValidator({
-        //     signature: abi.encode(sessionKeyParams),
-        //     chosenValidator: address(sessionKeyManager)
-        // })
     }
 }
