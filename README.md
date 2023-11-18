@@ -1,6 +1,6 @@
 ## ModuleKit Examples
 
-**Examples of smart account modules built using the [ModuleKit][https://github.com/rhinestonewtf/modulekit]**
+**Examples of smart account modules built using the [ModuleKit](https://github.com/rhinestonewtf/modulekit)**
 
 ## Usage
 
