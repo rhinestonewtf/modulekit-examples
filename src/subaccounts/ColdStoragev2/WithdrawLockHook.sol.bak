@@ -1,0 +1,86 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.23;
+
+import "erc7579/interfaces/IModule.sol";
+import "erc7579/interfaces/IMSA.sol";
+
+import "forge-std/console2.sol";
+
+bytes32 constant VALID_EXEC = keccak256("VALID_EXEC");
+
+contract WithdrawLockHook is IHook {
+    struct LockTime {
+        uint128 minDelay;
+        uint128 requestWithdrawTime;
+    }
+
+    mapping(IMSA subAccount => LockTime) public subAccountToLockTime;
+    mapping(IMSA subAccount => mapping(bytes4 => bool)) public subAccountWhitelist;
+
+    function requestWithdraw() external {
+        // check if subaccount has initialized this module
+        LockTime storage lockTime = subAccountToLockTime[IMSA(msg.sender)];
+        if (lockTime.minDelay == 0) {
+            revert();
+        }
+        lockTime.requestWithdrawTime = uint128(block.timestamp);
+    }
+
+    function enable(bytes calldata data) external override {
+        IMSA subaccount = IMSA(msg.sender);
+        (uint128 minDelay, bytes4[] memory whitelistedFunctionSigs) =
+            abi.decode(data, (uint128, bytes4[]));
+
+        console2.log("whitelist");
+
+        subAccountToLockTime[subaccount] = LockTime({ minDelay: minDelay, requestWithdrawTime: 0 });
+
+        for (uint256 i; i < whitelistedFunctionSigs.length; i++) {
+            subAccountWhitelist[subaccount][whitelistedFunctionSigs[i]] = true;
+            console2.logBytes4(whitelistedFunctionSigs[i]);
+        }
+        subAccountWhitelist[subaccount][this.requestWithdraw.selector] = true;
+    }
+
+    function disable(bytes calldata) external override {
+        subAccountToLockTime[IMSA(msg.sender)] = LockTime({ minDelay: 0, requestWithdrawTime: 0 });
+    }
+
+    function preCheck(
+        address sender,
+        address target,
+        uint256 value,
+        bytes calldata data
+    )
+        external
+        override
+        returns (bytes memory)
+    {
+        bytes4 functionSig = bytes4(data[0:4]);
+        console2.log("functionSig");
+        console2.logBytes4(functionSig);
+        if (target == address(this) && subAccountWhitelist[IMSA(msg.sender)][bytes4(data[:4])]) {
+            return abi.encode(VALID_EXEC);
+        }
+    }
+
+    function postCheck(bytes calldata data) external override returns (bool success) {
+        // whitelist function sigs
+        console2.log("data");
+        console2.logBytes(data);
+        if (data.length >= 32) {
+            if (bytes32(data[0:32]) == VALID_EXEC) return true;
+        }
+        // check if subaccount has initialized this module
+        LockTime memory lockTime = subAccountToLockTime[IMSA(msg.sender)];
+        if (lockTime.minDelay == 0) {
+            return false;
+        }
+        if (lockTime.requestWithdrawTime + lockTime.minDelay > block.timestamp) {
+            return false;
+        }
+
+        subAccountToLockTime[IMSA(msg.sender)].requestWithdrawTime = 0;
+        return true;
+    }
+}

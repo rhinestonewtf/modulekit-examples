@@ -10,7 +10,7 @@ import "modulekit/modulekit/integrations/uniswap/v3/UniswapSwaps.sol";
 import "modulekit/modulekit/ConditionalExecutorBase.sol";
 
 import "forge-std/interfaces/IERC20.sol";
-import { SentinelListLib } from "sentinellist/src/SentinelList.sol";
+import { SentinelListLib } from "sentinellist/SentinelList.sol";
 
 import "forge-std/console2.sol";
 

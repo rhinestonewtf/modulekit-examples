@@ -9,7 +9,7 @@ import "modulekit/modulekit/interfaces/IExecutor.sol";
 import "checknsignatures/CheckNSignatures.sol";
 import "modulekit/core/ISessionKeyValidationModule.sol";
 import { ValidatorSelectionLib } from "modulekit/modulekit/lib/ValidatorSelectionLib.sol";
-import "solady/utils/LibSort.sol";
+import "solady/src/utils/LibSort.sol";
 
 // Struct definition for token transaction events
 struct TokenTxEvent {

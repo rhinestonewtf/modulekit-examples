@@ -1,0 +1,66 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.23;
+
+import "erc7579/interfaces/IModule.sol";
+import "erc7579/interfaces/IMSA.sol";
+import "solady/src/utils/SignatureCheckerLib.sol";
+
+contract OwnableValidator is IValidator {
+    using SignatureCheckerLib for address;
+
+    mapping(IMSA subAccount => address mainAccount) public subAccountToMainAccount;
+
+    function enable(bytes calldata data) external override {
+        subAccountToMainAccount[IMSA(msg.sender)] = abi.decode(data, (address));
+    }
+
+    function disable(bytes calldata data) external override {
+        subAccountToMainAccount[IMSA(msg.sender)] = address(0);
+    }
+
+    function validateUserOp(
+        IERC4337.UserOperation calldata userOp,
+        bytes32 userOpHash,
+        uint256 missingAccountFunds
+    )
+        external
+        override
+        returns (uint256)
+    {
+        // get main account
+        address mainAccount = subAccountToMainAccount[IMSA(msg.sender)];
+
+        // check that main account is authorized
+        if (mainAccount == address(0)) {
+            return 0;
+        }
+
+        bool validSig = mainAccount.isValidSignatureNow(userOpHash, userOp.signature);
+        if (validSig) {
+            return 1;
+        }
+    }
+
+    function isValidSignature(
+        bytes32 hash,
+        bytes calldata data
+    )
+        external
+        view
+        override
+        returns (bytes4)
+    {
+        // get main account
+        address mainAccount = subAccountToMainAccount[IMSA(msg.sender)];
+
+        // check that main account is authorized
+        if (mainAccount == address(0)) {
+            return 0xFFFFFFFF;
+        }
+
+        bool validSig = mainAccount.isValidSignatureNow(hash, data);
+        if (validSig) {
+            return this.isValidSignature.selector;
+        }
+    }
+}

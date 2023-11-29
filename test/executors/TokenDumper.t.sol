@@ -3,7 +3,7 @@
 pragma solidity ^0.8.19;
 
 import "../MainnetFork.t.sol";
-import "murky/src/Merkle.sol";
+import "murky/Merkle.sol";
 import {
     RhinestoneModuleKit,
     RhinestoneModuleKitLib,

@@ -1,0 +1,47 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.23;
+
+import "erc7579/interfaces/IModule.sol";
+import "erc7579/interfaces/IMSA.sol";
+import "solady/src/auth/Ownable.sol";
+
+import "forge-std/console2.sol";
+
+contract OwnableExecutor is IExecutor, Ownable {
+    mapping(IMSA subAccount => address mainAccount) public subAccountToMainAccount;
+
+    event NewSubAccount(IMSA subAccount, address mainAccount);
+
+    function enable(bytes calldata data) external override {
+        IMSA subaccount = IMSA(msg.sender);
+        address mainAccount = abi.decode(data, (address));
+
+        subAccountToMainAccount[subaccount] = mainAccount;
+
+        emit NewSubAccount(subaccount, mainAccount);
+    }
+
+    function disable(bytes calldata) external override {
+        subAccountToMainAccount[IMSA(msg.sender)] = address(0);
+    }
+
+    function executeOnSubAccount(
+        IMSA subAccount,
+        address to,
+        uint256 value,
+        bytes calldata callData
+    )
+        external
+        returns (bytes memory)
+    {
+        // check that msg.sender is authorized
+        console2.log("msg.sender", msg.sender);
+        console2.log("main account", subAccountToMainAccount[subAccount]);
+        if (msg.sender != subAccountToMainAccount[subAccount]) {
+            revert();
+        }
+
+        // execute the call
+        return subAccount.executeFromModule(to, value, callData);
+    }
+}

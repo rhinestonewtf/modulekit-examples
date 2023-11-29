@@ -1,0 +1,43 @@
+import "erc7579/interfaces/IModule.sol";
+
+import "forge-std/interfaces/IERC20.sol";
+
+contract SpendingLimitHook is IHook {
+    struct LimitConfig {
+        uint128 limit;
+        uint128 period;
+    }
+
+    mapping(address => mapping(address token => LimitConfig)) public spendingLimit;
+
+    function enable(bytes calldata data) external override { }
+
+    function disable(bytes calldata data) external override { }
+
+    function preCheck(
+        address sender,
+        address target,
+        uint256 value,
+        bytes calldata data
+    )
+        external
+        override
+        returns (bytes memory hookData)
+    {
+        // check if execution is a transfer
+        bytes4 functionSig = bytes4(data[:4]);
+
+        if (functionSig == IERC20.transfer.selector) {
+            address token = address(bytes20(data[16:36]));
+            uint256 amount = address(bytes20(data[36:58]));
+        }
+    }
+
+    function _logSpending(address sender, address token, uint256 amount) internal {
+        // log spending
+        spendingLimit[sender][token].limit -= amount;
+        spendingLimit[sender][token].period = block.timestamp;
+    }
+
+    function postCheck(bytes calldata hookData) external override returns (bool success) { }
+}

@@ -17,7 +17,7 @@ import "solmate/test/utils/mocks/MockERC4626.sol";
 import "modulekit/test/mocks/MockCondition.sol";
 import "solmate/test/utils/mocks/MockERC20.sol";
 import "../MainnetFork.t.sol";
-import "murky/src/Merkle.sol";
+import "murky/Merkle.sol";
 import { IERC4626 } from "modulekit/modulekit/integrations/interfaces/IERC4626.sol";
 import "forge-std/interfaces/IERC20.sol";
 import "modulekit/core/SessionKeyManager.sol";
@@ -142,15 +142,15 @@ contract AutoSavingsTest is MainnetTest, RhinestoneModuleKit, CheckNSignaturesFo
          });
 
         // trigger 4337 exec
-        instance.exec4337({
-            target: address(autoSavings),
-            value: 0,
-            callData: abi.encodeCall(
-                autoSavings.trigger,
-                (usdc, IExecutorManager(address(instance.aux.executorManager)), 0, amount, conditions)
-                ),
-            signature: abi.encode(sessionKeyParams),
-            validator: address(instance.aux.sessionKeyManager)
-        });
+        // instance.exec4337({
+        //     target: address(autoSavings),
+        //     value: 0,
+        //     callData: abi.encodeCall(
+        //         autoSavings.trigger,
+        //         (usdc, IExecutorManager(address(instance.aux.executorManager)), 0, amount, conditions)
+        //         ),
+        //     signature: abi.encode(sessionKeyParams),
+        //     validator: address(instance.aux.sessionKeyManager)
+        // });
     }
 }

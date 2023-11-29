@@ -9,7 +9,7 @@ import {
     ERC1271_MAGICVALUE
 } from "modulekit/modulekit/ValidatorBase.sol";
 import { CheckSignatures } from "checknsignatures/CheckNSignatures.sol";
-import { SentinelListLib } from "sentinellist/src/SentinelList.sol";
+import { SentinelListLib } from "sentinellist/SentinelList.sol";
 
 import "forge-std/console2.sol";
 

@@ -2,7 +2,7 @@
 pragma solidity ^0.8.19;
 
 import { Test } from "forge-std/Test.sol";
-import { ECDSA } from "solady/utils/ECDSA.sol";
+import { ECDSA } from "solady/src/utils/ECDSA.sol";
 import {
     RhinestoneModuleKit,
     RhinestoneModuleKitLib,

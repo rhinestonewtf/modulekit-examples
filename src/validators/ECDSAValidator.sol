@@ -8,7 +8,7 @@ import {
     VALIDATION_FAILED,
     ERC1271_MAGICVALUE
 } from "modulekit/modulekit/ValidatorBase.sol";
-import { ECDSA } from "solady/utils/ECDSA.sol";
+import { ECDSA } from "solady/src/utils/ECDSA.sol";
 
 contract ECDSAValidator is ValidatorBase {
     using ECDSA for bytes32;

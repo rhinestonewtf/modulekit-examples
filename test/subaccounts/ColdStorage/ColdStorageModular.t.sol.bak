@@ -1,0 +1,72 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.19;
+
+import { Test } from "forge-std/Test.sol";
+import { ECDSA } from "solady/src/utils/ECDSA.sol";
+import {
+    RhinestoneModuleKit,
+    RhinestoneModuleKitLib,
+    RhinestoneAccount
+} from "modulekit/test/utils/safe-base/RhinestoneModuleKit.sol";
+
+import "src/subaccounts/ColdStorage/FlashloanBorrower.sol";
+import "src/subaccounts/ColdStorage/FlashloanLender.sol";
+import "src/subaccounts/ColdStorage/TimeLockHook.sol";
+
+contract WebAuthnValidatorTest is Test, RhinestoneModuleKit {
+    using RhinestoneModuleKitLib for RhinestoneAccount;
+    using ECDSA for bytes32;
+
+    RhinestoneAccount mainAccount;
+    RhinestoneAccount coldstorage;
+
+    FlashloanBorrower borrower;
+    FlashloanLender lender;
+    TimeLockHook hook;
+
+    function setUp() public {
+        // Setup account
+        instance = makeRhinestoneAccount("1");
+        coldstorage = makeRhinestoneAccount("coldstorage");
+        vm.deal(instance.account, 10 ether);
+
+        // Setup borrower
+        borrower = new FlashloanBorrower();
+        lender = new FlashloanLender();
+        hook = new TimeLockHook();
+
+        coldstorage.addFallback({
+            handleFunctionSig: IERC6682.availableForFlashLoan.selector,
+            isStatic: true,
+            handler: address(borrower)
+        });
+        coldstorage.addFallback({
+            handleFunctionSig: IERC6682.flashFeeToken.selector,
+            isStatic: true,
+            handler: address(borrower)
+        });
+        coldstorage.addFallback({
+            handleFunctionSig: IERC6682.flashFee.selector,
+            isStatic: true,
+            handler: address(borrower)
+        });
+
+        coldstorage.addFallback({
+            handleFunctionSig: IERC3156FlashLender.flashLoan.selector,
+            isStatic: false,
+            handler: address(borrower)
+        });
+
+        coldstorage.addHook(address(hook));
+
+        mainAccount.addFallback({
+            handleFunctionSig: IERC3156FlashBorrower.onFlashLoan.selector,
+            isStatic: false,
+            handler: address(lender)
+        });
+    }
+
+    function testWithdraw() public { }
+
+    function testFlashloan() public { }
+}
