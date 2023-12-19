@@ -1,6 +1,0 @@
-ColdStorage2Test
-When queue is set
-├─ When time slot is too small
-│  └─ it should revert
-└─ When time slot is too big
-   └─ it should revert
