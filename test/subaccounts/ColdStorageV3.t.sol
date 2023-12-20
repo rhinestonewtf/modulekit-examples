@@ -162,18 +162,21 @@ contract VCSTest is Test, RhinestoneModuleKit {
         // initiate flashloan
         bytes memory data; // FlashLoanType | signature | callData
 
+        // TODO sign batched transaction.
+
         IExecution.Execution[] memory executions = new IExecution.Execution[](2);
+        // Token gated action
         executions[0] = IExecution.Execution({
+            target: address(target),
+            value: 0,
+            callData: abi.encodeCall(MockTarget.setValue, (0x4141))
+        });
+        executions[1] = IExecution.Execution({
             target: address(nft),
             value: 0,
             callData: abi.encodeCall(
                 MockERC721.transferFrom, (owner.account, vaultAccount.account, 1337)
                 )
-        });
-        executions[1] = IExecution.Execution({
-            target: address(target),
-            value: 0,
-            callData: abi.encodeCall(MockTarget.setValue, (0x4141))
         });
         bytes memory tokenGatedCall =
             abi.encodeCall(IExecution.executeBatchFromExecutor, (executions));
