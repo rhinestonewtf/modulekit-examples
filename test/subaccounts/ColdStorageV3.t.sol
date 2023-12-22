@@ -137,6 +137,7 @@ contract VCSTest is Test, RhinestoneModuleKit {
 
     function test_tryWithdraw__withinBlockedTime_ShouldFail() public {
         // TODO
+        vaultAccount.expect4337Revert();
         vaultAccount.exec4337(
             address(nft),
             abi.encodeCall(MockERC721.transferFrom, (vaultAccount.account, owner.account, 1337))
@@ -146,13 +147,19 @@ contract VCSTest is Test, RhinestoneModuleKit {
     }
 
     function test_tryWithdraw__afterBlockedTime_ShouldSucceed() public {
-        vaultAccount.exec4337(address(vaultHook), abi.encodeCall(VaultHook.requestTransfer, ()));
+        IExecution.Execution memory execution = IExecution.Execution({
+            target: address(nft),
+            value: 0,
+            callData: abi.encodeCall(
+                MockERC721.transferFrom, (vaultAccount.account, owner.account, 1337)
+                )
+        });
+        vaultAccount.exec4337(
+            address(vaultHook), abi.encodeCall(VaultHook.requestTimelockedExecution, (execution, 0))
+        );
         vm.roll(15 days);
         // TODO
-        vaultAccount.exec4337(
-            address(nft),
-            abi.encodeCall(MockERC721.transferFrom, (vaultAccount.account, owner.account, 1337))
-        );
+        vaultAccount.exec4337(execution.target, execution.callData);
 
         assertEq(nft.ownerOf(1337), owner.account);
     }

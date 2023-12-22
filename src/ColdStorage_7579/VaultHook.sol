@@ -1,13 +1,18 @@
 // SPDX-License-Identifier: MIT
-import "./HookBase.sol";
 
 pragma solidity ^0.8.19;
 
 import "forge-std/console2.sol";
+import "./HookBase.sol";
+import "erc7579/interfaces/IMSA.sol";
 import "forge-std/interfaces/IERC721.sol";
+
+import "@openzeppelin/contracts/utils/structs/EnumerableMap.sol";
 
 contract VaultHook is HookBase {
     error UnsupportedExecution();
+
+    using EnumerableMap for EnumerableMap.Bytes32ToBytes32Map;
 
     struct VaultConfig {
         uint128 requestTime;
@@ -15,15 +20,37 @@ contract VaultHook is HookBase {
         address owner;
     }
 
-    mapping(address => VaultConfig) internal vaultConfig;
+    mapping(address subAccount => VaultConfig) internal vaultConfig;
+    mapping(address subAccount => EnumerableMap.Bytes32ToBytes32Map) internal executions;
 
-    function requestTransfer() external {
-        // TODO check that vault is installed
-        vaultConfig[msg.sender].requestTime = uint128(block.timestamp);
+    /**
+     * Function that must be triggered from subaccount.
+     * requests an execution to happen in the future
+     *
+     */
+    function requestTimelockedExecution(
+        IExecution.Execution calldata _exec,
+        uint256 additionalWait
+    )
+        external
+    {
+        // get min wait period
+        uint256 minWaitPeriod = vaultConfig[msg.sender].waitPeriod;
+        bytes32 executionHash = keccak256(abi.encode(_exec));
+        console2.log("\n\nexecutionHash");
+        console2.logBytes32(executionHash);
+
+        console2.log("target: %s", _exec.target);
+        console2.logBytes(_exec.callData);
+        console2.log("\n\n");
+
+        executions[msg.sender].set(
+            executionHash, bytes32(block.timestamp + minWaitPeriod + additionalWait)
+        );
     }
 
     function onInstall(bytes calldata data) external override {
-        // if (vaultConfig[msg.sender].waitPeriod != 0) revert();
+        if (vaultConfig[msg.sender].waitPeriod != 0) revert();
         vaultConfig[msg.sender].waitPeriod = abi.decode(data, (uint128));
         console2.log("VaultHook.onInstall");
     }
@@ -50,10 +77,10 @@ contract VaultHook is HookBase {
         view
         returns (bool isValid)
     {
-        if (target != address(this)) return false;
-        bytes4 functionSig = bytes4(callData[0:4]);
-        if (functionSig != this.requestTransfer.selector) return false;
-        return true;
+        // if (target != address(this)) return false;
+        // bytes4 functionSig = bytes4(callData[0:4]);
+        // if (functionSig != this.requestTransfer.selector) return false;
+        // return true;
     }
 
     modifier alwaysAllowTransferRequest(address callTarget, bytes calldata callData) {
@@ -86,10 +113,27 @@ contract VaultHook is HookBase {
         internal
         virtual
         override
-        onlyIfDue(target, callData)
         returns (bytes memory hookData)
     {
-        console2.log("VaultHook.onExecute");
+        bytes4 functionSig = bytes4(callData[0:4]);
+
+        // check if call is a requestTimelockedExecution
+        if (target == address(this) && functionSig == this.requestTimelockedExecution.selector) {
+            return "";
+        }
+
+        // check if transaction has been requested before
+
+        // TODO check that only token transfers are in callData
+        IExecution.Execution memory _exec =
+            IExecution.Execution({ target: target, value: value, callData: callData });
+        bytes32 executionHash = keccak256(abi.encode(_exec));
+        (bool success, bytes32 entry) = executions[msg.sender].tryGet(executionHash);
+        if (!success) revert("Missing request");
+
+        uint256 requestTimeStamp = uint256(entry);
+        if (requestTimeStamp > block.timestamp) return "";
+        revert("Request not due yet");
     }
 
     function onExecuteBatch(

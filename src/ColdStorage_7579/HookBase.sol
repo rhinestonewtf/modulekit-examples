@@ -3,7 +3,6 @@ pragma solidity ^0.8.23;
 
 import "erc7579/interfaces/IModule.sol";
 import { IExecution, IAccountConfig, IAccountConfig_Hook } from "erc7579/interfaces/IMSA.sol";
-import "forge-std/console2.sol";
 
 abstract contract HookBase is IHook {
     error HookInvalidSelector(bytes4);
@@ -20,8 +19,7 @@ abstract contract HookBase is IHook {
         if (IExecution.execute.selector == accountExecSelector) {
             address to = address(bytes20(msgData[16:36]));
             uint256 value = uint256(bytes32(msgData[36:68]));
-            bytes calldata callData = msgData[132:];
-            console2.log("HookBase.preCheck: execute");
+            bytes calldata callData = msgData[132:msgData.length - 28];
             return onExecute(msgSender, to, value, callData);
         }
 
