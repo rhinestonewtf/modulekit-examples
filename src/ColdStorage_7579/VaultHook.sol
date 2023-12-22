@@ -60,7 +60,6 @@ contract VaultHook is HookBase {
             if (tokenReceiver != _config.owner) revert("Invalid receiver transfer");
         }
 
-        // TODO check that receiver of ETH token transfer is owner
 
         // write executionHash to storage
         executions[msg.sender].set(
@@ -144,25 +143,25 @@ contract VaultHook is HookBase {
         override
         returns (bytes memory hookData)
     {
-        bytes4 functionSig = bytes4(callData[0:4]);
-
-        // check if call is a requestTimelockedExecution
-        if (target == address(this) && functionSig == this.requestTimelockedExecution.selector) {
-            return "";
-        }
-
-        // check if transaction has been requested before
-
-        // TODO check that only token transfers are in callData
-        IExecution.Execution memory _exec =
-            IExecution.Execution({ target: target, value: value, callData: callData });
-        bytes32 executionHash = keccak256(abi.encode(_exec));
-        (bool success, bytes32 entry) = executions[msg.sender].tryGet(executionHash);
-        if (!success) revert("Missing request");
-
-        uint256 requestTimeStamp = uint256(entry);
-        if (requestTimeStamp > block.timestamp) return "";
-        revert("Request not due yet");
+        // bytes4 functionSig = bytes4(callData[0:4]);
+        //
+        // // check if call is a requestTimelockedExecution
+        // if (target == address(this) && functionSig == this.requestTimelockedExecution.selector) {
+        //     return "";
+        // }
+        //
+        // // check if transaction has been requested before
+        //
+        // // TODO check that only token transfers are in callData
+        // IExecution.Execution memory _exec =
+        //     IExecution.Execution({ target: target, value: value, callData: callData });
+        // bytes32 executionHash = keccak256(abi.encode(_exec));
+        // (bool success, bytes32 entry) = executions[msg.sender].tryGet(executionHash);
+        // if (!success) revert("Missing request");
+        //
+        // uint256 requestTimeStamp = uint256(entry);
+        // if (requestTimeStamp > block.timestamp) return "";
+        // revert("Request not due yet");
     }
 
     function onExecuteBatchFromModule(
