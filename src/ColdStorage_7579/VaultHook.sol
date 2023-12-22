@@ -6,6 +6,7 @@ import "forge-std/console2.sol";
 import "./HookBase.sol";
 import "erc7579/interfaces/IMSA.sol";
 import "forge-std/interfaces/IERC721.sol";
+import "forge-std/interfaces/IERC20.sol";
 
 import "@openzeppelin/contracts/utils/structs/EnumerableMap.sol";
 
@@ -15,13 +16,28 @@ contract VaultHook is HookBase {
     using EnumerableMap for EnumerableMap.Bytes32ToBytes32Map;
 
     struct VaultConfig {
-        uint128 requestTime;
         uint128 waitPeriod;
         address owner;
     }
 
     mapping(address subAccount => VaultConfig) internal vaultConfig;
     mapping(address subAccount => EnumerableMap.Bytes32ToBytes32Map) internal executions;
+
+    event WithdrawalRequested(address indexed subAccount, IExecution.Execution indexed exec);
+
+    function _getTokenTxReceiver(bytes calldata callData) internal returns (address receiver) {
+        bytes4 functionSig = bytes4(callData[0:4]);
+        bytes calldata params = callData[4:];
+        if (functionSig == IERC20.transfer.selector) {
+            (receiver,) = abi.decode(params, (address, uint256));
+        } else if (functionSig == IERC20.transferFrom.selector) {
+            (, receiver,) = abi.decode(params, (address, address, uint256));
+        } else if (functionSig == IERC721.transferFrom.selector) {
+            (, receiver,) = abi.decode(params, (address, address, uint256));
+        } else {
+            revert("Invalid TokenTransfer");
+        }
+    }
 
     /**
      * Function that must be triggered from subaccount.
@@ -34,25 +50,29 @@ contract VaultHook is HookBase {
     )
         external
     {
+        VaultConfig memory _config = vaultConfig[msg.sender];
         // get min wait period
-        uint256 minWaitPeriod = vaultConfig[msg.sender].waitPeriod;
         bytes32 executionHash = keccak256(abi.encode(_exec));
-        console2.log("\n\nexecutionHash");
-        console2.logBytes32(executionHash);
 
-        console2.log("target: %s", _exec.target);
-        console2.logBytes(_exec.callData);
-        console2.log("\n\n");
+        if (_exec.callData.length != 0) {
+            // check that transaction is only a token transfer
+            address tokenReceiver = _getTokenTxReceiver(_exec.callData);
+            if (tokenReceiver != _config.owner) revert("Invalid receiver transfer");
+        }
 
+        // TODO check that receiver of ETH token transfer is owner
+
+        // write executionHash to storage
         executions[msg.sender].set(
-            executionHash, bytes32(block.timestamp + minWaitPeriod + additionalWait)
+            executionHash, bytes32(block.timestamp + _config.waitPeriod + additionalWait)
         );
+
+        emit WithdrawalRequested(msg.sender, _exec);
     }
 
     function onInstall(bytes calldata data) external override {
-        if (vaultConfig[msg.sender].waitPeriod != 0) revert();
-        vaultConfig[msg.sender].waitPeriod = abi.decode(data, (uint128));
-        console2.log("VaultHook.onInstall");
+        VaultConfig storage _config = vaultConfig[msg.sender];
+        (_config.waitPeriod, _config.owner) = abi.decode(data, (uint128, address));
     }
 
     function onUninstall(bytes calldata data) external override {
@@ -67,41 +87,6 @@ contract VaultHook is HookBase {
     {
         if (keccak256(hookData) == keccak256("")) return true;
         return false;
-    }
-
-    function _checkIfRequestTransfer(
-        address target,
-        bytes calldata callData
-    )
-        internal
-        view
-        returns (bool isValid)
-    {
-        // if (target != address(this)) return false;
-        // bytes4 functionSig = bytes4(callData[0:4]);
-        // if (functionSig != this.requestTransfer.selector) return false;
-        // return true;
-    }
-
-    modifier alwaysAllowTransferRequest(address callTarget, bytes calldata callData) {
-        if (!_checkIfRequestTransfer(callTarget, callData)) {
-            _;
-        }
-    }
-
-    function _requestTransferIsValid() internal returns (bool isValid) {
-        isValid = vaultConfig[msg.sender].requestTime + vaultConfig[msg.sender].waitPeriod
-            > block.timestamp;
-    }
-
-    modifier onlyIfDue(address callTarget, bytes calldata callData) {
-        if (_requestTransferIsValid()) {
-            _;
-        } else if (_checkIfRequestTransfer(callTarget, callData)) {
-            _;
-        } else {
-            revert();
-        }
     }
 
     function onExecute(
@@ -159,9 +144,25 @@ contract VaultHook is HookBase {
         override
         returns (bytes memory hookData)
     {
-        if (bytes4(callData[:4]) != IERC721.transferFrom.selector) revert();
-        (address from, address to, uint256 tokenId) =
-            abi.decode(callData[4:], (address, address, uint256));
+        bytes4 functionSig = bytes4(callData[0:4]);
+
+        // check if call is a requestTimelockedExecution
+        if (target == address(this) && functionSig == this.requestTimelockedExecution.selector) {
+            return "";
+        }
+
+        // check if transaction has been requested before
+
+        // TODO check that only token transfers are in callData
+        IExecution.Execution memory _exec =
+            IExecution.Execution({ target: target, value: value, callData: callData });
+        bytes32 executionHash = keccak256(abi.encode(_exec));
+        (bool success, bytes32 entry) = executions[msg.sender].tryGet(executionHash);
+        if (!success) revert("Missing request");
+
+        uint256 requestTimeStamp = uint256(entry);
+        if (requestTimeStamp > block.timestamp) return "";
+        revert("Request not due yet");
     }
 
     function onExecuteBatchFromModule(

@@ -132,7 +132,10 @@ contract VCSTest is Test, RhinestoneModuleKit {
             validator: address(ownableValidator),
             initData: abi.encode(vaultOwner)
         });
-        account.addHook({ hook: address(vaultHook), initData: abi.encode(vaultWaitPeriod) });
+        account.addHook({
+            hook: address(vaultHook),
+            initData: abi.encode(vaultWaitPeriod, vaultOwner)
+        });
     }
 
     function test_tryWithdraw__withinBlockedTime_ShouldFail() public {
