@@ -11,11 +11,11 @@
     "url": "https://github.com/rhinestonewtf/module-examples/issues"
   },
   "dependencies": {
-    "@openzeppelin/contracts": "5.0.1",
+    "@openzeppelin/contracts": "5.0.1"
   },
   "devDependencies": {
     "account-abstraction": "github:eth-infinitism/account-abstraction",
-    "@rhinestone/modulekit": "link:../modulekitV2"
+    "@rhinestone/modulekit": "link:../modulekitV2",
     "ds-test": "github:dapphub/ds-test",
     "erc7579": "github:erc7579/erc7579-implementation",
     "forge-std": "github:foundry-rs/forge-std",
