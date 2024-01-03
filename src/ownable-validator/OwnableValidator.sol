@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.23;
 
-import {ERC7579ValidatorBase} from "modulekit/Modules.sol";
-import {UserOperation} from "modulekit/external/ERC4337.sol";
+import { ERC7579ValidatorBase } from "modulekit/Modules.sol";
+import { UserOperation } from "modulekit/external/ERC4337.sol";
 
-import {SignatureCheckerLib} from "solady/src/utils/SignatureCheckerLib.sol";
+import { SignatureCheckerLib } from "solady/src/utils/SignatureCheckerLib.sol";
 
-contract OwnableValidator is ERC7579Validator {
+contract OwnableValidator is ERC7579ValidatorBase {
     mapping(address subAccout => address) public owners;
 
     function onInstall(bytes calldata data) external override {
@@ -18,7 +18,10 @@ contract OwnableValidator is ERC7579Validator {
         delete owners[msg.sender];
     }
 
-    function validateUserOp(UserOperation calldata userOp, bytes32 userOpHash)
+    function validateUserOp(
+        UserOperation calldata userOp,
+        bytes32 userOpHash
+    )
         external
         override
         returns (ValidationData)
@@ -27,13 +30,17 @@ contract OwnableValidator is ERC7579Validator {
         return _packValidationData(isValid, 0, type(uint48).max);
     }
 
-    function isValidSignatureWithSender(address sender, bytes32 hash, bytes calldata data)
+    function isValidSignatureWithSender(
+        address sender,
+        bytes32 hash,
+        bytes calldata data
+    )
         external
         view
         override
         returns (bytes4)
     {
-        return 0x00000000;
+        return EIP1271_FAILED;
     }
 
     function name() external pure override returns (string memory) {
