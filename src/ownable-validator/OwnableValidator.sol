@@ -7,14 +7,14 @@ import { UserOperation } from "modulekit/external/ERC4337.sol";
 import { SignatureCheckerLib } from "solady/src/utils/SignatureCheckerLib.sol";
 
 contract OwnableValidator is ERC7579ValidatorBase {
-    mapping(address subAccout => address) public owners;
+    mapping(address subAccout => address owner) public owners;
 
     function onInstall(bytes calldata data) external override {
         address owner = abi.decode(data, (address));
         owners[msg.sender] = owner;
     }
 
-    function onUninstall(bytes calldata data) external override {
+    function onUninstall(bytes calldata) external override {
         delete owners[msg.sender];
     }
 
@@ -23,20 +23,23 @@ contract OwnableValidator is ERC7579ValidatorBase {
         bytes32 userOpHash
     )
         external
+        view
         override
         returns (ValidationData)
     {
-        bool isValid = SignatureCheckerLib.isValidSignatureNow(owners[userOp.sender], userOpHash, userOp.signature);
+        bool isValid = SignatureCheckerLib.isValidSignatureNow(
+            owners[userOp.sender], userOpHash, userOp.signature
+        );
         return _packValidationData(isValid, 0, type(uint48).max);
     }
 
     function isValidSignatureWithSender(
-        address sender,
-        bytes32 hash,
-        bytes calldata data
+        address,
+        bytes32,
+        bytes calldata
     )
         external
-        view
+        pure
         override
         returns (bytes4)
     {

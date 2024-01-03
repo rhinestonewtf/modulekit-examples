@@ -1,3 +1,4 @@
+/* solhint-disable */
 //********************************************************************************************/
 //  ___           _       ___               _         _    _ _
 // | __| _ ___ __| |_    / __|_ _ _  _ _ __| |_ ___  | |  (_) |__
@@ -19,7 +20,7 @@
 // Code is optimized for a=-3 only curves with prime order, constant like -1, -2 shall be replaced
 // if ever used for other curve than sec256R1
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.19;
 
 library EllipticCurveP256 {
     // Set parameters for curve sec256r1.
@@ -38,7 +39,8 @@ library EllipticCurveP256 {
     /* -2 mod p constant, used to speed up inversion and doubling (avoid negation)*/
     uint256 constant minus_2 = 0xFFFFFFFF00000001000000000000000000000000FFFFFFFFFFFFFFFFFFFFFFFD;
     /* -2 mod n constant, used to speed up inversion*/
-    uint256 constant minus_2modn = 0xFFFFFFFF00000000FFFFFFFFFFFFFFFFBCE6FAADA7179E84F3B9CAC2FC63254F;
+    uint256 constant minus_2modn =
+        0xFFFFFFFF00000000FFFFFFFFFFFFFFFFBCE6FAADA7179E84F3B9CAC2FC63254F;
 
     uint256 constant minus_1 = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF;
 
@@ -101,7 +103,15 @@ library EllipticCurveP256 {
      * /* @dev Convert from XYZZ rep to affine rep
      */
     /*    https://hyperelliptic.org/EFD/g1p/auto-shortw-xyzz-3.html#addition-add-2008-s*/
-    function ecZZ_SetAff(uint256 x, uint256 y, uint256 zz, uint256 zzz) internal returns (uint256 x1, uint256 y1) {
+    function ecZZ_SetAff(
+        uint256 x,
+        uint256 y,
+        uint256 zz,
+        uint256 zzz
+    )
+        internal
+        returns (uint256 x1, uint256 y1)
+    {
         uint256 zzzInv = FCL_pModInv(zzz); //1/zzz
         y1 = mulmod(y, zzzInv, p); //Y/zzz
         uint256 _b = mulmod(zz, zzzInv, p); //1/z
@@ -143,7 +153,8 @@ library EllipticCurveP256 {
 
     /**
      * @dev Sutherland2008 add a ZZ point with a normalized point and greedy formulae
-     * warning: assume that P1(x1,y1)!=P2(x2,y2), true in multiplication loop with prime order (cofactor 1)
+     * warning: assume that P1(x1,y1)!=P2(x2,y2), true in multiplication loop with prime order
+     * (cofactor 1)
      */
 
     //tbd: return -x1 and -Y1 in double to avoid two substractions
@@ -192,7 +203,16 @@ library EllipticCurveP256 {
      * @dev Check if point is the neutral of the curve
      */
 
-    function ecZZ_IsZero(uint256 x0, uint256 y0, uint256 zz0, uint256 zzz0) internal pure returns (bool) {
+    function ecZZ_IsZero(
+        uint256 x0,
+        uint256 y0,
+        uint256 zz0,
+        uint256 zzz0
+    )
+        internal
+        pure
+        returns (bool)
+    {
         if ((y0 == 0)) {
             return true;
         }
@@ -200,7 +220,8 @@ library EllipticCurveP256 {
     }
 
     /**
-     * @dev Return the zero curve in affine coordinates. Compatible with the double formulae (no special case)
+     * @dev Return the zero curve in affine coordinates. Compatible with the double formulae (no
+     * special case)
      */
 
     function ecAff_SetZero() internal pure returns (uint256 x, uint256 y) {
@@ -215,7 +236,8 @@ library EllipticCurveP256 {
     }
 
     /**
-     * @dev Check if a point in affine coordinates is on the curve (reject Neutral that is indeed on the curve).
+     * @dev Check if a point in affine coordinates is on the curve (reject Neutral that is indeed on
+     * the curve).
      */
     function ecAff_isOnCurve(uint256 x, uint256 y) internal pure returns (bool) {
         if (0 == x || x == p || 0 == y || y == p) {
@@ -234,7 +256,15 @@ library EllipticCurveP256 {
      * @dev Add two elliptic curve points in affine coordinates.
      */
 
-    function ecAff_add(uint256 x0, uint256 y0, uint256 x1, uint256 y1) internal returns (uint256, uint256) {
+    function ecAff_add(
+        uint256 x0,
+        uint256 y0,
+        uint256 x1,
+        uint256 y1
+    )
+        internal
+        returns (uint256, uint256)
+    {
         uint256 zz0;
         uint256 zzz0;
 
@@ -269,7 +299,8 @@ library EllipticCurveP256 {
         unchecked {
             if (scalar_u == 0 && scalar_v == 0) return 0;
 
-            (H0, H1) = ecAff_add(gx, gy, Q0, Q1); //will not work if Q=P, obvious forbidden private key
+            (H0, H1) = ecAff_add(gx, gy, Q0, Q1); //will not work if Q=P, obvious forbidden private
+                // key
 
             /*
      while( ( ((scalar_u>>index)&1)+2*((scalar_v>>index)&1) ) ==0){
@@ -278,7 +309,10 @@ library EllipticCurveP256 {
      */
 
             assembly {
-                for { let T4 := add(shl(1, and(shr(index, scalar_v), 1)), and(shr(index, scalar_u), 1)) } eq(T4, 0) {
+                for {
+                    let T4 :=
+                        add(shl(1, and(shr(index, scalar_v), 1)), and(shr(index, scalar_u), 1))
+                } eq(T4, 0) {
                     index := sub(index, 1)
                     T4 := add(shl(1, and(shr(index, scalar_v), 1)), and(shr(index, scalar_u), 1))
                 } { }
@@ -316,11 +350,13 @@ library EllipticCurveP256 {
                     T2 := mulmod(T4, addmod(X, sub(p, T3), p), p) //-M(S-X3)=M(X3-S)
 
                     //Y:= addmod(T2, sub(p, mulmod(T1, Y ,p)),p  )//Y3= M(S-X3)-W*Y1
-                    Y := addmod(mulmod(T1, Y, p), T2, p) //-Y3= W*Y1-M(S-X3), we replace Y by -Y to avoid a sub in ecAdd
+                    Y := addmod(mulmod(T1, Y, p), T2, p) //-Y3= W*Y1-M(S-X3), we replace Y by -Y to
+                        // avoid a sub in ecAdd
 
                     {
                         //value of dibit
-                        T4 := add(shl(1, and(shr(index, scalar_v), 1)), and(shr(index, scalar_u), 1))
+                        T4 :=
+                            add(shl(1, and(shr(index, scalar_v), 1)), and(shr(index, scalar_u), 1))
 
                         if iszero(T4) {
                             Y := sub(p, Y) //restore the -Y inversion
@@ -353,7 +389,8 @@ library EllipticCurveP256 {
                         let y2 := addmod(mulmod(T2, zzz, p), Y, p) //R
                         T2 := addmod(mulmod(T1, zz, p), sub(p, X), p) //P
 
-                        //special extremely rare case accumulator where EcAdd is replaced by EcDbl, no need to optimize
+                        //special extremely rare case accumulator where EcAdd is replaced by EcDbl,
+                        // no need to optimize
                         // this
                         //todo : construct edge vector case
                         if eq(y2, 0) {
@@ -381,11 +418,15 @@ library EllipticCurveP256 {
                         }
 
                         T4 := mulmod(T2, T2, p) //PP
-                        let TT1 := mulmod(T4, T2, p) //PPP, this one could be spared, but adding this register spare gas
+                        let TT1 := mulmod(T4, T2, p) //PPP, this one could be spared, but adding
+                            // this register spare gas
                         zz := mulmod(zz, T4, p)
                         zzz := mulmod(zzz, TT1, p) //zz3=V*ZZ1
                         let TT2 := mulmod(X, T4, p)
-                        T4 := addmod(addmod(mulmod(y2, y2, p), sub(p, TT1), p), mulmod(minus_2, TT2, p), p)
+                        T4 :=
+                            addmod(
+                                addmod(mulmod(y2, y2, p), sub(p, TT1), p), mulmod(minus_2, TT2, p), p
+                            )
                         Y := addmod(mulmod(addmod(TT2, sub(p, T4), p), y2, p), mulmod(Y, TT1, p), p)
 
                         X := T4
@@ -393,7 +434,8 @@ library EllipticCurveP256 {
                 } //end loop
                 mstore(add(T, 0x60), zz)
                 //(X,Y)=ecZZ_SetAff(X,Y,zz, zzz);
-                //T[0] = inverseModp_Hard(T[0], p); //1/zzz, inline modular inversion using precompile:
+                //T[0] = inverseModp_Hard(T[0], p); //1/zzz, inline modular inversion using
+                // precompile:
                 // Define length of base, exponent and modulus. 0x20 == 32 bytes
                 mstore(T, 0x20)
                 mstore(add(T, 0x20), 0x20)
@@ -416,7 +458,8 @@ library EllipticCurveP256 {
         return X;
     }
 
-    //8 dimensions Shamir's trick, using precomputations stored in Shamir8,  stored as Bytecode of an external
+    //8 dimensions Shamir's trick, using precomputations stored in Shamir8,  stored as Bytecode of
+    // an external
     //contract at given address dataPointer
     //(thx to Lakhdar https://github.com/Kelvyne for EVM storage explanations and tricks)
     // the external tool to generate tables from public key is in the /sage directory
@@ -460,7 +503,8 @@ library EllipticCurveP256 {
                         let T2 := mulmod(TT1, TT1, p) // V=U^2
                         let T3 := mulmod(X, T2, p) // S = X1*V
                         let T1 := mulmod(TT1, T2, p) // W=UV
-                        let T4 := mulmod(3, mulmod(addmod(X, sub(p, zz), p), addmod(X, zz, p), p), p) //M=3*(X1-ZZ1)*(X1+ZZ1)
+                        let T4 :=
+                            mulmod(3, mulmod(addmod(X, sub(p, zz), p), addmod(X, zz, p), p), p) //M=3*(X1-ZZ1)*(X1+ZZ1)
                         zzz := mulmod(T1, zzz, p) //zzz3=W*zzz1
                         zz := mulmod(T2, zz, p) //zz3=V*ZZ1, V free
 
@@ -469,22 +513,45 @@ library EllipticCurveP256 {
                         let T5 := mulmod(T4, addmod(X, sub(p, T3), p), p) //-M(S-X3)=M(X3-S)
 
                         //Y:= addmod(T2, sub(p, mulmod(T1, Y ,p)),p  )//Y3= M(S-X3)-W*Y1
-                        Y := addmod(mulmod(T1, Y, p), T5, p) //-Y3= W*Y1-M(S-X3), we replace Y by -Y to avoid a sub in
+                        Y := addmod(mulmod(T1, Y, p), T5, p) //-Y3= W*Y1-M(S-X3), we replace Y by -Y
+                            // to avoid a sub in
                             // ecAdd
 
                         /* compute element to access in precomputed table */
                     }
                     {
-                        let T4 := add(shl(13, and(shr(index, scalar_v), 1)), shl(9, and(shr(index, scalar_u), 1)))
+                        let T4 :=
+                            add(
+                                shl(13, and(shr(index, scalar_v), 1)),
+                                shl(9, and(shr(index, scalar_u), 1))
+                            )
                         let index2 := sub(index, 64)
                         let T3 :=
-                            add(T4, add(shl(12, and(shr(index2, scalar_v), 1)), shl(8, and(shr(index2, scalar_u), 1))))
+                            add(
+                                T4,
+                                add(
+                                    shl(12, and(shr(index2, scalar_v), 1)),
+                                    shl(8, and(shr(index2, scalar_u), 1))
+                                )
+                            )
                         let index3 := sub(index2, 64)
                         let T2 :=
-                            add(T3, add(shl(11, and(shr(index3, scalar_v), 1)), shl(7, and(shr(index3, scalar_u), 1))))
+                            add(
+                                T3,
+                                add(
+                                    shl(11, and(shr(index3, scalar_v), 1)),
+                                    shl(7, and(shr(index3, scalar_u), 1))
+                                )
+                            )
                         index := sub(index3, 64)
                         let T1 :=
-                            add(T2, add(shl(10, and(shr(index, scalar_v), 1)), shl(6, and(shr(index, scalar_u), 1))))
+                            add(
+                                T2,
+                                add(
+                                    shl(10, and(shr(index, scalar_v), 1)),
+                                    shl(6, and(shr(index, scalar_u), 1))
+                                )
+                            )
 
                         //index:=add(index,192), restore index, interleaved with loop
 
@@ -544,14 +611,16 @@ library EllipticCurveP256 {
                         //zzz3=V*ZZ1
                         zzz := mulmod(zzz, T1, p) // W=UV/
                         let zz1 := mulmod(X, T4, p)
-                        X := addmod(addmod(mulmod(y2, y2, p), sub(p, T1), p), mulmod(minus_2, zz1, p), p)
+                        X :=
+                            addmod(addmod(mulmod(y2, y2, p), sub(p, T1), p), mulmod(minus_2, zz1, p), p)
                         Y := addmod(mulmod(addmod(zz1, sub(p, X), p), y2, p), mulmod(Y, T1, p), p)
                     }
                 } //end loop
                 mstore(add(T, 0x60), zz)
 
                 //(X,Y)=ecZZ_SetAff(X,Y,zz, zzz);
-                //T[0] = inverseModp_Hard(T[0], p); //1/zzz, inline modular inversion using precompile:
+                //T[0] = inverseModp_Hard(T[0], p); //1/zzz, inline modular inversion using
+                // precompile:
                 // Define length of base, exponent and modulus. 0x20 == 32 bytes
                 mstore(T, 0x20)
                 mstore(add(T, 0x20), 0x20)
@@ -570,7 +639,8 @@ library EllipticCurveP256 {
         } //end unchecked
     }
 
-    //8 dimensions Shamir's trick, using precomputations stored in Shamir8,  stored as Bytecode of an external
+    //8 dimensions Shamir's trick, using precomputations stored in Shamir8,  stored as Bytecode of
+    // an external
     //contract at given address dataPointer
     //(thx to Lakhdar https://github.com/Kelvyne for EVM storage explanations and tricks)
     // the external tool to generate tables from public key is in the /sage directory
@@ -614,7 +684,8 @@ library EllipticCurveP256 {
                         let T2 := mulmod(TT1, TT1, p) // V=U^2
                         let T3 := mulmod(X, T2, p) // S = X1*V
                         let T1 := mulmod(TT1, T2, p) // W=UV
-                        let T4 := mulmod(3, mulmod(addmod(X, sub(p, zz), p), addmod(X, zz, p), p), p) //M=3*(X1-ZZ1)*(X1+ZZ1)
+                        let T4 :=
+                            mulmod(3, mulmod(addmod(X, sub(p, zz), p), addmod(X, zz, p), p), p) //M=3*(X1-ZZ1)*(X1+ZZ1)
                         zzz := mulmod(T1, zzz, p) //zzz3=W*zzz1
                         zz := mulmod(T2, zz, p) //zz3=V*ZZ1, V free
 
@@ -623,22 +694,45 @@ library EllipticCurveP256 {
                         let T5 := mulmod(T4, addmod(X, sub(p, T3), p), p) //-M(S-X3)=M(X3-S)
 
                         //Y:= addmod(T2, sub(p, mulmod(T1, Y ,p)),p  )//Y3= M(S-X3)-W*Y1
-                        Y := addmod(mulmod(T1, Y, p), T5, p) //-Y3= W*Y1-M(S-X3), we replace Y by -Y to avoid a sub in
+                        Y := addmod(mulmod(T1, Y, p), T5, p) //-Y3= W*Y1-M(S-X3), we replace Y by -Y
+                            // to avoid a sub in
                             // ecAdd
 
                         /* compute element to access in precomputed table */
                     }
                     {
-                        let T4 := add(shl(13, and(shr(index, scalar_v), 1)), shl(9, and(shr(index, scalar_u), 1)))
+                        let T4 :=
+                            add(
+                                shl(13, and(shr(index, scalar_v), 1)),
+                                shl(9, and(shr(index, scalar_u), 1))
+                            )
                         let index2 := sub(index, 64)
                         let T3 :=
-                            add(T4, add(shl(12, and(shr(index2, scalar_v), 1)), shl(8, and(shr(index2, scalar_u), 1))))
+                            add(
+                                T4,
+                                add(
+                                    shl(12, and(shr(index2, scalar_v), 1)),
+                                    shl(8, and(shr(index2, scalar_u), 1))
+                                )
+                            )
                         let index3 := sub(index2, 64)
                         let T2 :=
-                            add(T3, add(shl(11, and(shr(index3, scalar_v), 1)), shl(7, and(shr(index3, scalar_u), 1))))
+                            add(
+                                T3,
+                                add(
+                                    shl(11, and(shr(index3, scalar_v), 1)),
+                                    shl(7, and(shr(index3, scalar_u), 1))
+                                )
+                            )
                         index := sub(index3, 64)
                         let T1 :=
-                            add(T2, add(shl(10, and(shr(index, scalar_v), 1)), shl(6, and(shr(index, scalar_u), 1))))
+                            add(
+                                T2,
+                                add(
+                                    shl(10, and(shr(index, scalar_v), 1)),
+                                    shl(6, and(shr(index, scalar_u), 1))
+                                )
+                            )
 
                         //index:=add(index,192), restore index, interleaved with loop
 
@@ -698,14 +792,16 @@ library EllipticCurveP256 {
                         //zzz3=V*ZZ1
                         zzz := mulmod(zzz, T1, p) // W=UV/
                         let zz1 := mulmod(X, T4, p)
-                        X := addmod(addmod(mulmod(y2, y2, p), sub(p, T1), p), mulmod(minus_2, zz1, p), p)
+                        X :=
+                            addmod(addmod(mulmod(y2, y2, p), sub(p, T1), p), mulmod(minus_2, zz1, p), p)
                         Y := addmod(mulmod(addmod(zz1, sub(p, X), p), y2, p), mulmod(Y, T1, p), p)
                     }
                 } //end loop
                 mstore(add(T, 0x60), zz)
 
                 //(X,Y)=ecZZ_SetAff(X,Y,zz, zzz);
-                //T[0] = inverseModp_Hard(T[0], p); //1/zzz, inline modular inversion using precompile:
+                //T[0] = inverseModp_Hard(T[0], p); //1/zzz, inline modular inversion using
+                // precompile:
                 // Define length of base, exponent and modulus. 0x20 == 32 bytes
                 mstore(T, 0x20)
                 mstore(add(T, 0x20), 0x20)
@@ -772,17 +868,40 @@ library EllipticCurveP256 {
                     T2 := mulmod(T4, addmod(X, sub(p, T3), p), p) //-M(S-X3)=M(X3-S)
 
                     //Y:= addmod(T2, sub(p, mulmod(T1, Y ,p)),p  )//Y3= M(S-X3)-W*Y1
-                    Y := addmod(mulmod(T1, Y, p), T2, p) //-Y3= W*Y1-M(S-X3), we replace Y by -Y to avoid a sub in ecAdd
+                    Y := addmod(mulmod(T1, Y, p), T2, p) //-Y3= W*Y1-M(S-X3), we replace Y by -Y to
+                        // avoid a sub in ecAdd
 
                     /* compute element to access in precomputed table */
 
-                    T4 := add(shl(13, and(shr(index, scalar_v), 1)), shl(9, and(shr(index, scalar_u), 1)))
+                    T4 :=
+                        add(shl(13, and(shr(index, scalar_v), 1)), shl(9, and(shr(index, scalar_u), 1)))
                     index := sub(index, 64)
-                    T4 := add(T4, add(shl(12, and(shr(index, scalar_v), 1)), shl(8, and(shr(index, scalar_u), 1))))
+                    T4 :=
+                        add(
+                            T4,
+                            add(
+                                shl(12, and(shr(index, scalar_v), 1)),
+                                shl(8, and(shr(index, scalar_u), 1))
+                            )
+                        )
                     index := sub(index, 64)
-                    T4 := add(T4, add(shl(11, and(shr(index, scalar_v), 1)), shl(7, and(shr(index, scalar_u), 1))))
+                    T4 :=
+                        add(
+                            T4,
+                            add(
+                                shl(11, and(shr(index, scalar_v), 1)),
+                                shl(7, and(shr(index, scalar_u), 1))
+                            )
+                        )
                     index := sub(index, 64)
-                    T4 := add(T4, add(shl(10, and(shr(index, scalar_v), 1)), shl(6, and(shr(index, scalar_u), 1))))
+                    T4 :=
+                        add(
+                            T4,
+                            add(
+                                shl(10, and(shr(index, scalar_v), 1)),
+                                shl(6, and(shr(index, scalar_u), 1))
+                            )
+                        )
                     //index:=add(index,192), restore index, interleaved with loop
 
                     //tbd: check validity of formulae with (0,1) to remove conditional jump
@@ -804,7 +923,8 @@ library EllipticCurveP256 {
                         T2 := mulmod(zz, T4, p) // W=UV
                         zzz := mulmod(zzz, T1, p) //zz3=V*ZZ1
                         let zz1 := mulmod(X, T4, p)
-                        T4 := addmod(addmod(mulmod(y2, y2, p), sub(p, T1), p), mulmod(minus_2, zz1, p), p)
+                        T4 :=
+                            addmod(addmod(mulmod(y2, y2, p), sub(p, T1), p), mulmod(minus_2, zz1, p), p)
                         Y := addmod(mulmod(addmod(zz1, sub(p, T4), p), y2, p), mulmod(Y, T1, p), p)
                         zz := T2
                         X := T4
@@ -813,7 +933,8 @@ library EllipticCurveP256 {
                 mstore(add(T, 0x60), zz)
 
                 //(X,Y)=ecZZ_SetAff(X,Y,zz, zzz);
-                //T[0] = inverseModp_Hard(T[0], p); //1/zzz, inline modular inversion using precompile:
+                //T[0] = inverseModp_Hard(T[0], p); //1/zzz, inline modular inversion using
+                // precompile:
                 // Define length of base, exponent and modulus. 0x20 == 32 bytes
                 mstore(T, 0x20)
                 mstore(add(T, 0x20), 0x20)
@@ -835,7 +956,14 @@ library EllipticCurveP256 {
     /**
      * @dev ECDSA verification, given , signature, and public key.
      */
-    function ecdsa_verify(bytes32 message, uint256[2] calldata rs, uint256[2] calldata Q) internal returns (bool) {
+    function ecdsa_verify(
+        bytes32 message,
+        uint256[2] calldata rs,
+        uint256[2] calldata Q
+    )
+        internal
+        returns (bool)
+    {
         if (rs[0] == 0 || rs[0] >= n || rs[1] == 0 || rs[1] >= n) {
             return false;
         }
@@ -861,7 +989,14 @@ library EllipticCurveP256 {
     /**
      * @dev ECDSA verification, given , signature, and public key.
      */
-    function ecdsa_verify_mem(bytes32 message, uint256[2] memory rs, uint256[2] memory Q) internal returns (bool) {
+    function ecdsa_verify_mem(
+        bytes32 message,
+        uint256[2] memory rs,
+        uint256[2] memory Q
+    )
+        internal
+        returns (bool)
+    {
         if (rs[0] == 0 || rs[0] >= n || rs[1] == 0 || rs[1] >= n) {
             return false;
         }
@@ -887,7 +1022,8 @@ library EllipticCurveP256 {
     }
 
     /**
-     * @dev ECDSA verification using a precomputed table of multiples of P and Q stored in contract at address Shamir8
+     * @dev ECDSA verification using a precomputed table of multiples of P and Q stored in contract
+     * at address Shamir8
      *     generation of contract bytecode for precomputations is done using sagemath code
      *     (see sage directory, WebAuthn_precompute.sage)
      */
@@ -914,7 +1050,9 @@ library EllipticCurveP256 {
         uint256 X;
 
         //Shamir 8 dimensions
-        X = ecZZ_mulmuladd_S8_extcode(mulmod(uint256(message), sInv, n), mulmod(rs[0], sInv, n), Shamir8);
+        X = ecZZ_mulmuladd_S8_extcode(
+            mulmod(uint256(message), sInv, n), mulmod(rs[0], sInv, n), Shamir8
+        );
 
         assembly {
             X := addmod(X, sub(n, calldataload(rs)), n)
@@ -924,7 +1062,8 @@ library EllipticCurveP256 {
     } //end  ecdsa_precomputed_verify()
 
     /**
-     * @dev ECDSA verification using a precomputed table of multiples of P and Q appended at end of contract at address
+     * @dev ECDSA verification using a precomputed table of multiples of P and Q appended at end of
+     * contract at address
      * endcontract
      *     generation of contract bytecode for precomputations is done using sagemath code
      *     (see sage directory, WebAuthn_precompute.sage)
@@ -950,7 +1089,9 @@ library EllipticCurveP256 {
         uint256 X;
 
         //Shamir 8 dimensions
-        X = ecZZ_mulmuladd_S8_hackmem(mulmod(uint256(message), sInv, n), mulmod(rs[0], sInv, n), endcontract);
+        X = ecZZ_mulmuladd_S8_hackmem(
+            mulmod(uint256(message), sInv, n), mulmod(rs[0], sInv, n), endcontract
+        );
 
         assembly {
             X := addmod(X, sub(n, calldataload(rs)), n)
@@ -958,3 +1099,4 @@ library EllipticCurveP256 {
         return X == 0;
     } //end  ecdsa_precomputed_verify()
 } //EOF
+/* solhint-enable */

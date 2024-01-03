@@ -1,3 +1,4 @@
+/* solhint-disable */
 //********************************************************************************************/
 //  ___           _       ___               _         _    _ _
 // | __| _ ___ __| |_    / __|_ _ _  _ _ __| |_ ___  | |  (_) |__
@@ -19,7 +20,7 @@
 // Code is optimized for a=-3 only curves with prime order, constant like -1, -2 shall be replaced
 // if ever used for other curve than sec256R1
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.19;
 
 import { Base64URL } from "./Base64URL.sol";
 import { EllipticCurveP256 } from "./EllipticCurve.sol";
@@ -113,7 +114,12 @@ library WebAuthnLib {
         // Let the caller check if User Presence (0x01) or User Verification (0x04) are set
 
         bytes32 message = WebAuthnLib.WebAuthn_format(
-            authenticatorData, authenticatorDataFlagMask, clientData, clientChallenge, clientChallengeDataOffset, rs
+            authenticatorData,
+            authenticatorDataFlagMask,
+            clientData,
+            clientChallenge,
+            clientChallengeDataOffset,
+            rs
         );
 
         bool result = EllipticCurveP256.ecdsa_verify_mem(message, rs, Q);
@@ -136,7 +142,12 @@ library WebAuthnLib {
         // Let the caller check if User Presence (0x01) or User Verification (0x04) are set
 
         bytes32 message = WebAuthnLib.WebAuthn_format(
-            authenticatorData, authenticatorDataFlagMask, clientData, clientChallenge, clientChallengeDataOffset, rs
+            authenticatorData,
+            authenticatorDataFlagMask,
+            clientData,
+            clientChallenge,
+            clientChallengeDataOffset,
+            rs
         );
 
         bool result = EllipticCurveP256.ecdsa_precomputed_verify(message, rs, dataPointer);
@@ -160,7 +171,12 @@ library WebAuthnLib {
         // Let the caller check if User Presence (0x01) or User Verification (0x04) are set
 
         bytes32 message = WebAuthnLib.WebAuthn_format(
-            authenticatorData, authenticatorDataFlagMask, clientData, clientChallenge, clientChallengeDataOffset, rs
+            authenticatorData,
+            authenticatorDataFlagMask,
+            clientData,
+            clientChallenge,
+            clientChallengeDataOffset,
+            rs
         );
 
         bool result = EllipticCurveP256.ecdsa_precomputed_hackmem(message, rs, dataPointer);
@@ -168,3 +184,4 @@ library WebAuthnLib {
         return result;
     }
 }
+/* solhint-enable */

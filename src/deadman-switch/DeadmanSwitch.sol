@@ -2,7 +2,6 @@
 pragma solidity ^0.8.21;
 
 import { ERC7579HookBase } from "modulekit/Modules.sol";
-import { UserOperation } from "modulekit/external/ERC4337.sol";
 
 struct DeadmansSwitchParams {
     uint256 timeout;
@@ -14,7 +13,7 @@ contract DeadmanSwitch is ERC7579HookBase {
         address nominee;
     }
 
-    mapping(address account => DeadmanSwitchStorage) private _lastAccess;
+    mapping(address account => DeadmanSwitchStorage config) private _lastAccess;
 
     event Recovery(address account, address nominee);
 
@@ -25,15 +24,15 @@ contract DeadmanSwitch is ERC7579HookBase {
         owners[msg.sender] = owner;
     }
 
-    function onUninstall(bytes calldata data) external override {
+    function onUninstall(bytes calldata) external override {
         delete owners[msg.sender];
     }
 
-    function name() external override returns (string memory name) {
+    function name() external override returns (string memory) {
         return "DeadmanSwitch";
     }
 
-    function version() external override returns (string memory version) {
+    function version() external override returns (string memory) {
         return "0.0.1";
     }
 

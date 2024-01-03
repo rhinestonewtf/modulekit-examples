@@ -19,7 +19,7 @@ contract WebAuthnValidator is ERC7579ValidatorBase {
 
     event NewPassKeyRegistered(address indexed smartAccount, string keyId);
 
-    mapping(address account => PassKeyId) public smartAccountPassKeys;
+    mapping(address account => PassKeyId passkeyConfig) public smartAccountPassKeys;
 
     function onInstall(bytes calldata data) external override {
         PassKeyId memory passkey = abi.decode(data, (PassKeyId));
@@ -47,7 +47,7 @@ contract WebAuthnValidator is ERC7579ValidatorBase {
         returns (ValidationData)
     {
         (
-            bytes32 keyHash,
+            ,
             bytes memory authenticatorData,
             bytes1 authenticatorDataFlagMask,
             bytes memory clientData,
@@ -59,16 +59,22 @@ contract WebAuthnValidator is ERC7579ValidatorBase {
         require(passKey.pubKeyY != 0 && passKey.pubKeyY != 0, "Key not found");
         uint256[2] memory Q = [passKey.pubKeyX, passKey.pubKeyY];
         bool isValidSignature = WebAuthnLib.checkSignature(
-            authenticatorData, authenticatorDataFlagMask, clientData, userOpHash, clientChallengeDataOffset, rs, Q
+            authenticatorData,
+            authenticatorDataFlagMask,
+            clientData,
+            userOpHash,
+            clientChallengeDataOffset,
+            rs,
+            Q
         );
 
         return _packValidationData(!isValidSignature, 0, type(uint48).max);
     }
 
     function isValidSignatureWithSender(
-        address sender,
-        bytes32 hash,
-        bytes calldata data
+        address,
+        bytes32,
+        bytes calldata
     )
         external
         view

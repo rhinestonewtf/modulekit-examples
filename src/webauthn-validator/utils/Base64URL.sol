@@ -1,7 +1,8 @@
+/* solhint-disable */
 // SPDX-License-Identifier: MIT
 // from OpenZeppelin Contracts (last updated v4.7.0) (utils/Base64.sol)
 
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.19;
 
 /**
  * @dev Provides a set of functions to operate with Base64 strings.
@@ -12,7 +13,8 @@ library Base64URL {
     /**
      * @dev Base64 Encoding/Decoding Table
      */
-    string internal constant _TABLE = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
+    string internal constant _TABLE =
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
 
     /**
      * @dev Converts a `bytes` to its Bytes64 `string` representation.
@@ -37,6 +39,7 @@ library Base64URL {
         string memory result = new string(4 * ((data.length + 2) / 3) - 1);
 
         /// @solidity memory-safe-assembly
+        // @solhint-disable-next-line no-inline-assembly
         assembly {
             // Prepare the lookup table (skip the first "length" byte)
             let tablePtr := add(table, 1)
@@ -91,3 +94,4 @@ library Base64URL {
         return result;
     }
 }
+/* solhint-enable */
