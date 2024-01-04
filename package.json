@@ -15,6 +15,7 @@
   },
   "devDependencies": {
     "account-abstraction": "github:eth-infinitism/account-abstraction",
+    "debug-entrypoint": "github:zeroknots/account-abstraction#develop",
     "@rhinestone/modulekit": "link:../modulekitV2",
     "ds-test": "github:dapphub/ds-test",
     "erc7579": "github:erc7579/erc7579-implementation",

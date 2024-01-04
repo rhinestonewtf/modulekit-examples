@@ -16,6 +16,9 @@ devDependencies:
   account-abstraction:
     specifier: github:eth-infinitism/account-abstraction
     version: github.com/eth-infinitism/account-abstraction/0524529465d917f08c1137e63a78c5f17f336b6b(ethers@5.7.2)(hardhat@2.19.4)(lodash@4.17.21)(typechain@5.2.0)
+  debug-entrypoint:
+    specifier: github:zeroknots/account-abstraction#develop
+    version: github.com/zeroknots/account-abstraction/3f348e3bb3fef5f60420a15f658490c592f84a80(ethers@5.7.2)(hardhat@2.19.4)(lodash@4.17.21)(typechain@5.2.0)
   ds-test:
     specifier: github:dapphub/ds-test
     version: github.com/dapphub/ds-test/e282159d5170298eb2455a6c05280ab5a73a4ef0
@@ -768,7 +771,6 @@ packages:
 
   /@openzeppelin/contracts@5.0.1:
     resolution: {integrity: sha512-yQJaT5HDp9hYOOp4jTYxMsR02gdFZFXhewX5HW9Jo4fsqSVqqyIO/xTHdWDaKX5a3pv1txmf076Lziz+sO7L1w==}
-    dev: false
 
   /@pnpm/config.env-replace@1.1.0:
     resolution: {integrity: sha512-htyl8TWnKL7K/ESFa1oW2UB5lVDxuF5DpM7tBi6Hu2LNL3mWkIzNLG6N4zoCUP1lCKNxWy/3iu8mS8MvToGd6w==}
@@ -4000,6 +4002,36 @@ packages:
     resolution: {tarball: https://codeload.github.com/vectorized/solady/tar.gz/741bda9b2914444bf3060da85c7615f64ce4eee1}
     name: solady
     version: 0.0.155
+    dev: true
+
+  github.com/zeroknots/account-abstraction/3f348e3bb3fef5f60420a15f658490c592f84a80(ethers@5.7.2)(hardhat@2.19.4)(lodash@4.17.21)(typechain@5.2.0):
+    resolution: {tarball: https://codeload.github.com/zeroknots/account-abstraction/tar.gz/3f348e3bb3fef5f60420a15f658490c592f84a80}
+    id: github.com/zeroknots/account-abstraction/3f348e3bb3fef5f60420a15f658490c592f84a80
+    name: accountabstraction
+    version: 0.6.0
+    dependencies:
+      '@nomiclabs/hardhat-etherscan': 2.1.8(hardhat@2.19.4)
+      '@openzeppelin/contracts': 5.0.1
+      '@thehubbleproject/bls': 0.5.1
+      '@typechain/hardhat': 2.3.1(hardhat@2.19.4)(lodash@4.17.21)(typechain@5.2.0)
+      '@types/mocha': 9.1.1
+      ethereumjs-util: 7.1.5
+      ethereumjs-wallet: 1.0.2
+      hardhat-deploy: 0.11.45
+      hardhat-deploy-ethers: 0.3.0-beta.13(ethers@5.7.2)(hardhat@2.19.4)
+      solidity-coverage: 0.8.5(hardhat@2.19.4)
+      source-map-support: 0.5.21
+      table: 6.8.1
+      typescript: 4.9.5
+    transitivePeerDependencies:
+      - bufferutil
+      - encoding
+      - ethers
+      - hardhat
+      - lodash
+      - supports-color
+      - typechain
+      - utf-8-validate
     dev: true
 
   github.com/zeroknots/sentinellist/1f9ec0250f1b3f14ba5d200629e3d9f3264fde61:

@@ -1,0 +1,24 @@
+
+  "name": "@rhinestone/module-examples",
+  "description": "Examples repository of the Rhinestone ModuleKit",
+  "license": "MIT",
+  "version": "0.3",
+  "author": {
+    "name": "zeroknots.eth",
+    "url": "https://rhinestone.wtf"
+  },
+  "bugs": {
+    "url": "https://github.com/rhinestonewtf/module-examples/issues"
+  },
+  "dependencies": {
+    "@openzeppelin/contracts": "5.0.1"
+  },
+  "devDependencies": {
+    "account-abstraction": "github:eth-infinitism/account-abstraction",
+    "@rhinestone/modulekit": "link:../modulekitV2"
+    "ds-test": "github:dapphub/ds-test",
+    "erc7579": "github:erc7579/erc7579-implementation",
+    "forge-std": "github:foundry-rs/forge-std",
+    "sentinellist": "github:zeroknots/sentinellist",
+    "solady": "github:vectorized/solady"
+  },
