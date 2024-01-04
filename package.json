@@ -1,5 +1,5 @@
 {
-  "name": "@rhinestone/module-examples",
+  "name": "@rhinestone/modulekit-examples",
   "description": "Examples repository of the Rhinestone ModuleKit",
   "license": "MIT",
   "version": "0.3",
@@ -8,7 +8,7 @@
     "url": "https://rhinestone.wtf"
   },
   "bugs": {
-    "url": "https://github.com/rhinestonewtf/module-examples/issues"
+    "url": "https://github.com/rhinestonewtf/modulekit-examples/issues"
   },
   "dependencies": {
     "@openzeppelin/contracts": "5.0.1"
@@ -31,7 +31,7 @@
     "CHANGELOG.md",
     "LICENSE-GPL.md"
   ],
-  "homepage": "https://github.com/rhinestonewtf/module-examples/#readme",
+  "homepage": "https://github.com/rhinestonewtf/modulekit-examples/#readme",
   "keywords": [
     "blockchain",
     "ethereum",
@@ -43,7 +43,7 @@
   "publishConfig": {
     "access": "public"
   },
-  "repository": "github.com/rhinestonewtf/module-examples",
+  "repository": "github.com/rhinestonewtf/modulekit-examples",
   "scripts": {
     "build": "forge build",
     "build:optimized": "FOUNDRY_PROFILE=optimized forge build",
