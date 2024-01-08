@@ -35,15 +35,18 @@ contract OwnableValidator is ERC7579ValidatorBase {
 
     function isValidSignatureWithSender(
         address,
-        bytes32,
-        bytes calldata
+        bytes32 hash,
+        bytes calldata data
     )
         external
-        pure
+        view
         override
         returns (bytes4)
     {
-        return EIP1271_FAILED;
+        address owner = owners[msg.sender];
+        return SignatureCheckerLib.isValidSignatureNow(owner, hash, data)
+            ? EIP1271_SUCCESS
+            : EIP1271_FAILED;
     }
 
     function name() external pure override returns (string memory) {

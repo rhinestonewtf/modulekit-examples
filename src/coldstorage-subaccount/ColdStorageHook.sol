@@ -11,6 +11,7 @@ import { IERC7579Execution } from "modulekit/ModuleKitLib.sol";
 
 contract ColdStorageHook is ERC7579HookDeconstructor {
     error UnsupportedExecution();
+    error UnauthorizedAccess();
 
     using EnumerableMap for EnumerableMap.Bytes32ToBytes32Map;
 
@@ -56,7 +57,9 @@ contract ColdStorageHook is ERC7579HookDeconstructor {
         if (_exec.callData.length != 0) {
             // check that transaction is only a token transfer
             address tokenReceiver = _getTokenTxReceiver(_exec.callData);
-            if (tokenReceiver != _config.owner) revert("Invalid receiver transfer");
+            if (tokenReceiver != _config.owner) {
+                revert("Invalid receiver transfer");
+            }
         }
 
         // write executionHash to storage
@@ -73,7 +76,8 @@ contract ColdStorageHook is ERC7579HookDeconstructor {
     }
 
     function onUninstall(bytes calldata data) external override {
-        vaultConfig[msg.sender].waitPeriod = 0;
+        delete vaultConfig[msg.sender].waitPeriod;
+        delete vaultConfig[msg.sender].owner;
     }
 
     function onPostCheck(bytes calldata hookData)
@@ -100,22 +104,21 @@ contract ColdStorageHook is ERC7579HookDeconstructor {
         bytes4 functionSig = bytes4(callData[0:4]);
 
         // check if call is a requestTimelockedExecution
-        if (target == address(this) && functionSig == this.requestTimelockedExecution.selector) {
-            return "";
+        if (target != address(this) || functionSig != this.requestTimelockedExecution.selector) {
+            revert UnauthorizedAccess();
         }
 
         // check if transaction has been requested before
 
-        // TODO check that only token transfers are in callData
         IERC7579Execution.Execution memory _exec =
             IERC7579Execution.Execution({ target: target, value: value, callData: callData });
         bytes32 executionHash = keccak256(abi.encode(_exec));
         (bool success, bytes32 entry) = executions[msg.sender].tryGet(executionHash);
-        if (!success) revert("Missing request");
+        if (!success) revert UnauthorizedAccess();
 
         uint256 requestTimeStamp = uint256(entry);
-        if (requestTimeStamp > block.timestamp) return "";
-        revert("Request not due yet");
+        if (requestTimeStamp < block.timestamp) revert UnauthorizedAccess();
+        return "";
     }
 
     function onExecuteBatch(
@@ -130,7 +133,7 @@ contract ColdStorageHook is ERC7579HookDeconstructor {
         revert UnsupportedExecution();
     }
 
-    function onExecuteFromModule(
+    function onExecuteFromExecutor(
         address msgSender,
         address target,
         uint256 value,
@@ -141,30 +144,12 @@ contract ColdStorageHook is ERC7579HookDeconstructor {
         override
         returns (bytes memory hookData)
     {
-        // bytes4 functionSig = bytes4(callData[0:4]);
-        //
-        // // check if call is a requestTimelockedExecution
-        // if (target == address(this) && functionSig == this.requestTimelockedExecution.selector) {
-        //     return "";
-        // }
-        //
-        // // check if transaction has been requested before
-        //
-        // // TODO check that only token transfers are in callData
-        // IERC7579Execution.Execution memory _exec =
-        //     IERC7579Execution.Execution({ target: target, value: value, callData: callData });
-        // bytes32 executionHash = keccak256(abi.encode(_exec));
-        // (bool success, bytes32 entry) = executions[msg.sender].tryGet(executionHash);
-        // if (!success) revert("Missing request");
-        //
-        // uint256 requestTimeStamp = uint256(entry);
-        // if (requestTimeStamp > block.timestamp) return "";
-        // revert("Request not due yet");
+        revert UnsupportedExecution();
     }
 
-    function onExecuteBatchFromModule(
+    function onExecuteBatchFromExecutor(
         address msgSender,
-        IERC7579Execution.Execution[] memory
+        IERC7579Execution.Execution[] calldata
     )
         internal
         virtual
@@ -174,33 +159,7 @@ contract ColdStorageHook is ERC7579HookDeconstructor {
         revert UnsupportedExecution();
     }
 
-    function onExecuteDelegateCall(
-        address msgSender,
-        address target,
-        bytes calldata callData
-    )
-        internal
-        virtual
-        override
-        returns (bytes memory hookData)
-    {
-        revert UnsupportedExecution();
-    }
-
-    function onExecuteDelegateCallFromModule(
-        address msgSender,
-        address target,
-        bytes calldata callData
-    )
-        internal
-        virtual
-        override
-        returns (bytes memory hookData)
-    {
-        revert UnsupportedExecution();
-    }
-
-    function onEnableExecutor(
+    function onInstallExecutor(
         address msgSender,
         address executor,
         bytes calldata callData
@@ -213,7 +172,7 @@ contract ColdStorageHook is ERC7579HookDeconstructor {
         revert UnsupportedExecution();
     }
 
-    function onDisableExecutor(
+    function onUninstallExecutor(
         address msgSender,
         address executor,
         bytes calldata callData
@@ -226,7 +185,7 @@ contract ColdStorageHook is ERC7579HookDeconstructor {
         revert UnsupportedExecution();
     }
 
-    function onEnableValidator(
+    function onInstallValidator(
         address msgSender,
         address validator,
         bytes calldata callData
@@ -239,7 +198,7 @@ contract ColdStorageHook is ERC7579HookDeconstructor {
         revert UnsupportedExecution();
     }
 
-    function onDisableValidator(
+    function onUninstallValidator(
         address msgSender,
         address validator,
         bytes calldata callData
@@ -252,7 +211,7 @@ contract ColdStorageHook is ERC7579HookDeconstructor {
         revert UnsupportedExecution();
     }
 
-    function onDisableHook(
+    function onUninstallHook(
         address msgSender,
         address hookModule,
         bytes calldata callData
@@ -265,7 +224,7 @@ contract ColdStorageHook is ERC7579HookDeconstructor {
         revert UnsupportedExecution();
     }
 
-    function onEnableHook(
+    function onInstallHook(
         address msgSender,
         address hookModule,
         bytes calldata callData
