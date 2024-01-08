@@ -22,6 +22,7 @@
     "forge-std": "github:foundry-rs/forge-std",
     "sentinellist": "github:zeroknots/sentinellist",
     "solady": "github:vectorized/solady",
+    "solarray": "github:sablier-labs/solarray",
     "solhint": "^4.0.0",
     "prettier": "^2.8.8"
   },

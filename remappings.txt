@@ -5,4 +5,5 @@ account-abstraction/=node_modules/account-abstraction/contracts/
 erc7579/=node_modules/erc7579/src/
 sentinellist/=node_modules/sentinellist/src/
 solady/=node_modules/solady/
+solarray/=node_modules/solarray/src/
 @openzeppelin/=node_modules/@openzeppelin/
