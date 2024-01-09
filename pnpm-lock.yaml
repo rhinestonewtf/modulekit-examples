@@ -14,11 +14,8 @@ devDependencies:
     specifier: link:../modulekitV2
     version: link:../modulekitV2
   account-abstraction:
-    specifier: link:../account-abstraction-debug
-    version: link:../account-abstraction-debug
-  debug-entrypoint:
     specifier: github:zeroknots/account-abstraction#develop
-    version: github.com/zeroknots/account-abstraction/3f348e3bb3fef5f60420a15f658490c592f84a80(ethers@5.7.2)(hardhat@2.19.4)(lodash@4.17.21)(typechain@5.2.0)
+    version: github.com/zeroknots/account-abstraction/970cfdb59bb6ee46fdb2b6ef83fae77d53041277(ethers@5.7.2)(hardhat@2.19.4)(lodash@4.17.21)(typechain@5.2.0)
   ds-test:
     specifier: github:dapphub/ds-test
     version: github.com/dapphub/ds-test/e282159d5170298eb2455a6c05280ab5a73a4ef0
@@ -3293,7 +3290,7 @@ packages:
     resolution: {integrity: sha512-uWjbaKIK3T1OSVptzX7Nl6PvQ3qAGtKEtVRjRuazjfL3Bx5eI409VZSqgND+4UNnmzLVdPj9FqFJNPqBZFve4w==}
     hasBin: true
     dependencies:
-      glob: 7.2.0
+      glob: 7.2.3
     dev: true
 
   /ripemd160@2.0.2:
@@ -3986,9 +3983,9 @@ packages:
     version: 0.0.158
     dev: true
 
-  github.com/zeroknots/account-abstraction/3f348e3bb3fef5f60420a15f658490c592f84a80(ethers@5.7.2)(hardhat@2.19.4)(lodash@4.17.21)(typechain@5.2.0):
-    resolution: {tarball: https://codeload.github.com/zeroknots/account-abstraction/tar.gz/3f348e3bb3fef5f60420a15f658490c592f84a80}
-    id: github.com/zeroknots/account-abstraction/3f348e3bb3fef5f60420a15f658490c592f84a80
+  github.com/zeroknots/account-abstraction/970cfdb59bb6ee46fdb2b6ef83fae77d53041277(ethers@5.7.2)(hardhat@2.19.4)(lodash@4.17.21)(typechain@5.2.0):
+    resolution: {tarball: https://codeload.github.com/zeroknots/account-abstraction/tar.gz/970cfdb59bb6ee46fdb2b6ef83fae77d53041277}
+    id: github.com/zeroknots/account-abstraction/970cfdb59bb6ee46fdb2b6ef83fae77d53041277
     name: accountabstraction
     version: 0.6.0
     dependencies:

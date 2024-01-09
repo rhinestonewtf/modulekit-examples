@@ -157,9 +157,6 @@ contract ColdStorageTest is RhinestoneModuleKit, Test {
         bytes32 userOpHash = coldStorage.hashUserOp(userOp);
 
         bytes memory signature = abi.encodePacked(address(mockValidator), "");
-        console.logBytes(signature);
-        console2.log(address(mockValidator));
-
         coldStorage.exec4337({
             target: address(coldStorageHook),
             value: 0,
