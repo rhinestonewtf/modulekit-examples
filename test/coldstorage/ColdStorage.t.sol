@@ -59,6 +59,7 @@ contract ColdStorageTest is RhinestoneModuleKit, Test {
 
         _setupMainAccount();
         _setUpColdstorage();
+        vm.warp(1_799_999);
     }
 
     function _setupMainAccount() public {
@@ -137,13 +138,8 @@ contract ColdStorageTest is RhinestoneModuleKit, Test {
 
         UserOperation memory userOp = ERC7579Helpers.toUserOp(execCallData, coldStorage.account);
         bytes32 userOpHash = coldStorage.hashUserOp(userOp);
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(ownerPk, userOpHash);
-        bytes memory signature = abi.encode(abi.encodePacked(r, s, v));
-        //
-        // address recover = ECDSA.recover(userOpHash, signature);
-        // assertEq(recover, owner);
 
-        signature = abi.encodePacked(address(ownableValidator), signature);
+        bytes memory signature = abi.encodePacked(address(mainAccount.defaultValidator), "");
 
         coldStorage.exec4337({
             target: address(coldStorageHook),
@@ -161,13 +157,7 @@ contract ColdStorageTest is RhinestoneModuleKit, Test {
             ERC7579Helpers.encodeExecution(exec.target, exec.value, exec.callData);
         UserOperation memory userOp = ERC7579Helpers.toUserOp(callData, coldStorage.account);
         bytes32 userOpHash = coldStorage.hashUserOp(userOp);
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(ownerPk, userOpHash);
-        bytes memory signature = abi.encode(abi.encodePacked(r, s, v));
-        //
-        // address recover = ECDSA.recover(userOpHash, signature);
-        // assertEq(recover, owner);
-
-        signature = abi.encodePacked(address(ownableValidator), signature);
+        bytes memory signature = abi.encodePacked(address(mainAccount.defaultValidator), "");
 
         coldStorage.exec4337({
             userOp: userOp,
@@ -187,8 +177,7 @@ contract ColdStorageTest is RhinestoneModuleKit, Test {
 
         _requestWithdraw(action, 0);
 
-        vm.roll(7 days + 1);
-
+        vm.warp(block.timestamp + 8 days);
         _execWithdraw(action);
     }
 }

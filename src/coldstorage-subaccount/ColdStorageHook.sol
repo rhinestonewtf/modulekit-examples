@@ -8,7 +8,6 @@ import { IERC20 } from "forge-std/interfaces/IERC20.sol";
 import { EnumerableMap } from "@openzeppelin/contracts/utils/structs/EnumerableMap.sol";
 import { ERC7579HookDeconstructor } from "modulekit/modules/ERC7579HookDeconstructor.sol";
 import { IERC7579Execution } from "modulekit/ModuleKitLib.sol";
-import "forge-std/console2.sol";
 
 contract ColdStorageHook is ERC7579HookDeconstructor {
     error UnsupportedExecution();
@@ -69,10 +68,8 @@ contract ColdStorageHook is ERC7579HookDeconstructor {
             }
         }
 
-        bytes32 entry = bytes32(block.timestamp + _config.waitPeriod + additionalWait);
-        console2.log("entry");
-        console2.logBytes32(entry);
-        console2.logBytes32(executionHash);
+        uint256 earliestWithdraw = uint256(block.timestamp + _config.waitPeriod + additionalWait);
+        bytes32 entry = bytes32(earliestWithdraw);
 
         // write executionHash to storage
         executions[msg.sender].set(executionHash, entry);
@@ -102,12 +99,7 @@ contract ColdStorageHook is ERC7579HookDeconstructor {
         pure
         returns (bytes32 digest)
     {
-        console2.log("execDigest");
-        console2.log(to);
-        console2.log(value);
-        console2.logBytes(callData);
         digest = keccak256(abi.encodePacked(to, value, callData));
-        console2.logBytes32(digest);
     }
 
     function onInstall(bytes calldata data) external override {
@@ -133,8 +125,6 @@ contract ColdStorageHook is ERC7579HookDeconstructor {
             return true;
         }
 
-        console2.log("false");
-        console2.logBytes(hookData);
         return false;
     }
 
@@ -157,14 +147,11 @@ contract ColdStorageHook is ERC7579HookDeconstructor {
         } else {
             bytes32 executionHash = _execDigestMemory(target, value, callData);
             (bool success, bytes32 entry) = executions[msg.sender].tryGet(executionHash);
-            console2.log("success", success);
-            console2.logBytes32(entry);
-            console2.logBytes32(executionHash);
 
             if (!success) revert UnauthorizedAccess();
 
             uint256 requestTimeStamp = uint256(entry);
-            if (requestTimeStamp < block.timestamp) revert UnauthorizedAccess();
+            if (requestTimeStamp > block.timestamp) revert UnauthorizedAccess();
 
             // check if transaction has been requested before
 

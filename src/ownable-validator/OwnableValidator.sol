@@ -6,7 +6,6 @@ import { UserOperation } from "modulekit/external/ERC4337.sol";
 
 import { SignatureCheckerLib } from "solady/src/utils/SignatureCheckerLib.sol";
 
-import "forge-std/console2.sol";
 
 contract OwnableValidator is ERC7579ValidatorBase {
     mapping(address subAccout => address owner) public owners;
@@ -32,7 +31,6 @@ contract OwnableValidator is ERC7579ValidatorBase {
         bool isValid = SignatureCheckerLib.isValidSignatureNow(
             owners[userOp.sender], userOpHash, userOp.signature
         );
-        console2.log("valid", isValid);
         return _packValidationData(!isValid, type(uint48).max, 0);
     }
 
@@ -47,10 +45,9 @@ contract OwnableValidator is ERC7579ValidatorBase {
         returns (bytes4)
     {
         address owner = owners[msg.sender];
-        // return SignatureCheckerLib.isValidSignatureNow(owner, hash, data)
-        //     ? EIP1271_SUCCESS
-        //     : EIP1271_FAILED;
-        return EIP1271_SUCCESS;
+        return SignatureCheckerLib.isValidSignatureNow(owner, hash, data)
+            ? EIP1271_SUCCESS
+            : EIP1271_FAILED;
     }
 
     function name() external pure override returns (string memory) {
