@@ -42,12 +42,12 @@ contract ColdStorageTest is RhinestoneModuleKit, Test {
     function setUp() public {
         mainAccount = makeRhinestoneAccount("mainAccount");
         coldStorage = makeRhinestoneAccount("coldStorage");
-        deal(address(mainAccount.account), address(coldStorage.account), 100 ether);
-        deal(address(coldStorage.account), address(mainAccount.account), 100 ether);
+        deal(address(coldStorage.account), 100 ether);
+        deal(address(mainAccount.account), 100 ether);
 
         token = new MockERC20();
         token.initialize("Mock Token", "MTK", 18);
-        deal(address(token), mainAccount.account, 100 ether);
+        deal(address(token), coldStorage.account, 100 ether);
 
         (owner, ownerPk) = makeAddrAndKey("owner");
 
@@ -113,7 +113,9 @@ contract ColdStorageTest is RhinestoneModuleKit, Test {
         );
 
         // install hook
-        coldStorage.installHook(address(coldStorageHook));
+        coldStorage.installHook(
+            address(coldStorageHook), abi.encode(uint128(7 days), address(mainAccount.account))
+        );
     }
 
     function simulateDeposit() internal {
@@ -127,17 +129,21 @@ contract ColdStorageTest is RhinestoneModuleKit, Test {
     )
         internal
     {
-        bytes32 userOpHash = coldStorage.getUserOpHash({
-            target: address(coldStorageHook),
-            value: 0,
-            callData: abi.encodeCall(
-                ColdStorageHook.requestTimelockedExecution, (exec, additionalDelay)
-                )
-        });
+        bytes memory execCallData = ERC7579Helpers.encodeExecution(
+            address(coldStorageHook),
+            0,
+            abi.encodeCall(ColdStorageHook.requestTimelockedExecution, (exec, additionalDelay))
+        );
 
-        vm.prank(mainAccount.account);
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(ownerPk, userOpHash.toEthSignedMessageHash());
+        UserOperation memory userOp = ERC7579Helpers.toUserOp(execCallData, coldStorage.account);
+        bytes32 userOpHash = coldStorage.hashUserOp(userOp);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(ownerPk, userOpHash);
         bytes memory signature = abi.encode(abi.encodePacked(r, s, v));
+        //
+        // address recover = ECDSA.recover(userOpHash, signature);
+        // assertEq(recover, owner);
+
+        signature = abi.encodePacked(address(ownableValidator), signature);
 
         coldStorage.exec4337({
             target: address(coldStorageHook),
@@ -150,5 +156,39 @@ contract ColdStorageTest is RhinestoneModuleKit, Test {
         });
     }
 
-    function test_() public { }
+    function _execWithdraw(IERC7579Execution.Execution memory exec) internal {
+        bytes memory callData =
+            ERC7579Helpers.encodeExecution(exec.target, exec.value, exec.callData);
+        UserOperation memory userOp = ERC7579Helpers.toUserOp(callData, coldStorage.account);
+        bytes32 userOpHash = coldStorage.hashUserOp(userOp);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(ownerPk, userOpHash);
+        bytes memory signature = abi.encode(abi.encodePacked(r, s, v));
+        //
+        // address recover = ECDSA.recover(userOpHash, signature);
+        // assertEq(recover, owner);
+
+        signature = abi.encodePacked(address(ownableValidator), signature);
+
+        coldStorage.exec4337({
+            userOp: userOp,
+            signature: signature,
+            validator: address(ownableValidator)
+        });
+    }
+
+    function test_withdraw() public {
+        IERC7579Execution.Execution memory action = IERC7579Execution.Execution({
+            target: address(token),
+            value: 0,
+            callData: abi.encodeWithSelector(
+                MockERC20.transfer.selector, address(mainAccount.account), 100
+                )
+        });
+
+        _requestWithdraw(action, 0);
+
+        vm.roll(7 days + 1);
+
+        _execWithdraw(action);
+    }
 }
