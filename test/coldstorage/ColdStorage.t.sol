@@ -4,6 +4,7 @@ pragma solidity ^0.8.23;
 import "forge-std/Test.sol";
 import "modulekit/ModuleKit.sol";
 import "modulekit/Modules.sol";
+import "modulekit/core/ExtensibleFallbackHandler.sol";
 import "modulekit/core/sessionKey/ISessionValidationModule.sol";
 import {
     SessionData, SessionKeyManagerLib
@@ -17,6 +18,8 @@ import { FlashloanCallback } from "src/coldstorage-subaccount/FlashloanCallback.
 import { FlashloanLender } from "src/coldstorage-subaccount/FlashloanLender.sol";
 import { ColdStorageHook } from "src/coldstorage-subaccount/ColdStorageHook.sol";
 import { OwnableValidator } from "src/ownable-validator/OwnableValidator.sol";
+
+import { ERC7579BootstrapConfig } from "modulekit/external/ERC7579.sol";
 
 import "src/coldstorage-subaccount/interfaces/Flashloan.sol";
 
@@ -36,12 +39,29 @@ contract ColdStorageTest is RhinestoneModuleKit, Test {
     ColdStorageHook internal coldStorageHook;
     OwnableValidator internal ownableValidator;
 
+    MockValidator internal mockValidator;
+
     uint256 ownerPk;
     address owner;
 
     function setUp() public {
-        mainAccount = makeRhinestoneAccount("mainAccount");
-        coldStorage = makeRhinestoneAccount("coldStorage");
+        init();
+
+        flashloanLender = new FlashloanLender(address(coldStorage.aux.fallbackHandler));
+        vm.label(address(flashloanLender), "flashloanLender");
+        flashloanCallback = new FlashloanCallback(address(mainAccount.aux.fallbackHandler));
+        vm.label(address(flashloanCallback), "flashloanCallback");
+        ownableValidator = new OwnableValidator();
+        vm.label(address(ownableValidator), "ownableValidator");
+        mockValidator = new MockValidator();
+        vm.label(address(mockValidator), "mockValidator");
+
+        coldStorageHook = new ColdStorageHook();
+        vm.label(address(coldStorageHook), "coldStorageHook");
+
+        _setupMainAccount();
+        _setUpColdstorage();
+
         deal(address(coldStorage.account), 100 ether);
         deal(address(mainAccount.account), 100 ether);
 
@@ -50,73 +70,70 @@ contract ColdStorageTest is RhinestoneModuleKit, Test {
         deal(address(token), coldStorage.account, 100 ether);
 
         (owner, ownerPk) = makeAddrAndKey("owner");
-
-        flashloanLender = new FlashloanLender(address(coldStorage.aux.fallbackHandler));
-        flashloanCallback = new FlashloanCallback(address(mainAccount.aux.fallbackHandler));
-        ownableValidator = new OwnableValidator();
-
-        coldStorageHook = new ColdStorageHook();
-
-        _setupMainAccount();
-        _setUpColdstorage();
         vm.warp(1_799_999);
     }
 
     function _setupMainAccount() public {
-        // configure main account to be able to handle flashloan callback
-        mainAccount.installFallback({
-            handleFunctionSig: IERC3156FlashBorrower.onFlashLoan.selector,
-            isStatic: false,
+        ExtensibleFallbackHandler.Params memory params = ExtensibleFallbackHandler.Params({
+            selector: IERC3156FlashBorrower.onFlashLoan.selector,
+            fallbackType: ExtensibleFallbackHandler.FallBackType.Dynamic,
             handler: address(flashloanCallback)
         });
-        mainAccount.installExecutor(address(flashloanCallback));
-        mainAccount.installValidator(address(ownableValidator), abi.encode(owner));
+
+        ERC7579BootstrapConfig[] memory validators =
+            makeBootstrapConfig(address(mockValidator), abi.encode(""));
+        ERC7579BootstrapConfig[] memory executors =
+            makeBootstrapConfig(address(flashloanCallback), abi.encode(""));
+        ERC7579BootstrapConfig memory hook = _emptyConfig();
+        ERC7579BootstrapConfig memory fallBack =
+            _makeBootstrapConfig(address(auxiliary.fallbackHandler), abi.encode(params));
+        mainAccount = makeRhinestoneAccount("mainAccount", validators, executors, hook, fallBack);
     }
 
     function _setUpColdstorage() public {
-        // configure coldStorage subaccount to handle ERC3156 flashloan requests
-        coldStorage.installFallback({
-            handleFunctionSig: IERC3156FlashLender.maxFlashLoan.selector,
-            isStatic: true,
+        ExtensibleFallbackHandler.Params[] memory params = new ExtensibleFallbackHandler.Params[](6);
+        params[0] = ExtensibleFallbackHandler.Params({
+            selector: IERC3156FlashLender.maxFlashLoan.selector,
+            fallbackType: ExtensibleFallbackHandler.FallBackType.Static,
             handler: address(flashloanLender)
         });
-        coldStorage.installFallback({
-            handleFunctionSig: IERC3156FlashLender.flashFee.selector,
-            isStatic: true,
+        params[1] = ExtensibleFallbackHandler.Params({
+            selector: IERC3156FlashLender.flashFee.selector,
+            fallbackType: ExtensibleFallbackHandler.FallBackType.Static,
             handler: address(flashloanLender)
         });
-        coldStorage.installFallback({
-            handleFunctionSig: IERC3156FlashLender.flashLoan.selector,
-            isStatic: false,
+        params[2] = ExtensibleFallbackHandler.Params({
+            selector: IERC3156FlashLender.flashLoan.selector,
+            fallbackType: ExtensibleFallbackHandler.FallBackType.Dynamic,
             handler: address(flashloanLender)
         });
-        // configure coldStorage subaccount to handle ERC6682 flashloan requests
-        coldStorage.installFallback({
-            handleFunctionSig: IERC6682.flashFeeToken.selector,
-            isStatic: true,
+        params[3] = ExtensibleFallbackHandler.Params({
+            selector: IERC6682.flashFeeToken.selector,
+            fallbackType: ExtensibleFallbackHandler.FallBackType.Static,
             handler: address(flashloanLender)
         });
-        coldStorage.installFallback({
-            handleFunctionSig: IERC6682.flashFee.selector,
-            isStatic: true,
+        params[4] = ExtensibleFallbackHandler.Params({
+            selector: IERC6682.flashFee.selector,
+            fallbackType: ExtensibleFallbackHandler.FallBackType.Static,
             handler: address(flashloanLender)
         });
-        coldStorage.installFallback({
-            handleFunctionSig: IERC6682.availableForFlashLoan.selector,
-            isStatic: true,
+        params[5] = ExtensibleFallbackHandler.Params({
+            selector: IERC6682.availableForFlashLoan.selector,
+            fallbackType: ExtensibleFallbackHandler.FallBackType.Static,
             handler: address(flashloanLender)
         });
 
-        coldStorage.installExecutor(address(flashloanLender));
-
-        coldStorage.installValidator(
-            address(ownableValidator), abi.encode(address(mainAccount.account))
-        );
-
-        // install hook
-        coldStorage.installHook(
+        ERC7579BootstrapConfig[] memory validators =
+            makeBootstrapConfig(address(ownableValidator), abi.encode(address(mainAccount.account)));
+        ERC7579BootstrapConfig[] memory executors =
+            makeBootstrapConfig(address(flashloanLender), abi.encode(""));
+        ERC7579BootstrapConfig memory hook = _makeBootstrapConfig(
             address(coldStorageHook), abi.encode(uint128(7 days), address(mainAccount.account))
         );
+        ERC7579BootstrapConfig memory fallBack =
+            _makeBootstrapConfig(address(auxiliary.fallbackHandler), abi.encode(params));
+
+        coldStorage = makeRhinestoneAccount("coldStorage", validators, executors, hook, fallBack);
     }
 
     function simulateDeposit() internal {
@@ -136,10 +153,12 @@ contract ColdStorageTest is RhinestoneModuleKit, Test {
             abi.encodeCall(ColdStorageHook.requestTimelockedExecution, (exec, additionalDelay))
         );
 
-        UserOperation memory userOp = ERC7579Helpers.toUserOp(execCallData, coldStorage.account);
+        UserOperation memory userOp = coldStorage.toUserOp(execCallData);
         bytes32 userOpHash = coldStorage.hashUserOp(userOp);
 
-        bytes memory signature = abi.encodePacked(address(mainAccount.defaultValidator), "");
+        bytes memory signature = abi.encodePacked(address(mockValidator), "");
+        console.logBytes(signature);
+        console2.log(address(mockValidator));
 
         coldStorage.exec4337({
             target: address(coldStorageHook),
@@ -155,9 +174,9 @@ contract ColdStorageTest is RhinestoneModuleKit, Test {
     function _execWithdraw(IERC7579Execution.Execution memory exec) internal {
         bytes memory callData =
             ERC7579Helpers.encodeExecution(exec.target, exec.value, exec.callData);
-        UserOperation memory userOp = ERC7579Helpers.toUserOp(callData, coldStorage.account);
+        UserOperation memory userOp = ERC4337Helpers.toUserOp(callData, coldStorage.account);
         bytes32 userOpHash = coldStorage.hashUserOp(userOp);
-        bytes memory signature = abi.encodePacked(address(mainAccount.defaultValidator), "");
+        bytes memory signature = abi.encodePacked(address(mockValidator), "");
 
         coldStorage.exec4337({
             userOp: userOp,
