@@ -15,8 +15,7 @@
   },
   "devDependencies": {
     "@rhinestone/modulekit": "link:../modulekitV2",
-    "account-abstraction": "link:../account-abstraction-debug",
-    "debug-entrypoint": "github:zeroknots/account-abstraction#develop",
+    "account-abstraction": "github:zeroknots/account-abstraction#develop",
     "ds-test": "github:dapphub/ds-test",
     "erc7579": "github:erc7579/erc7579-implementation",
     "forge-std": "github:foundry-rs/forge-std",
