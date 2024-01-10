@@ -147,11 +147,13 @@ contract ColdStorageTest is RhinestoneModuleKit, Test {
     )
         internal
     {
-        bytes memory execCallData = ERC7579Helpers.encodeExecution(
-            address(coldStorageHook),
-            0,
-            abi.encodeCall(ColdStorageHook.requestTimelockedExecution, (exec, additionalDelay))
-        );
+        bytes memory execCallData = ERC7579Helpers.encode({
+            target: address(coldStorageHook),
+            value: 0,
+            callData: abi.encodeCall(
+                ColdStorageHook.requestTimelockedExecution, (exec, additionalDelay)
+                )
+        });
 
         UserOperation memory userOp = coldStorage.toUserOp(execCallData);
         bytes32 userOpHash = coldStorage.hashUserOp(userOp);
@@ -169,9 +171,8 @@ contract ColdStorageTest is RhinestoneModuleKit, Test {
     }
 
     function _execWithdraw(IERC7579Execution.Execution memory exec) internal {
-        bytes memory callData =
-            ERC7579Helpers.encodeExecution(exec.target, exec.value, exec.callData);
-        UserOperation memory userOp = ERC4337Helpers.toUserOp(callData, coldStorage.account);
+        bytes memory callData = ERC7579Helpers.encode(exec.target, exec.value, exec.callData);
+        UserOperation memory userOp = coldStorage.toUserOp(callData);
         bytes32 userOpHash = coldStorage.hashUserOp(userOp);
         bytes memory signature = abi.encodePacked(address(mockValidator), "");
 

@@ -49,7 +49,7 @@ contract ERC20RevocationTest is RhinestoneModuleKit, Test {
             sessionKeySigner: keySigner1
         });
 
-        sessionValidatorDigest = instance.installSessionKey({
+        (, sessionValidatorDigest) = instance.installSessionKey({
             sessionKeyModule: (address(sessionValidator)),
             validUntil: type(uint48).max,
             validAfter: 0,

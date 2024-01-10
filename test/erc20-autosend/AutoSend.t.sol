@@ -49,7 +49,7 @@ contract AutoSendTest is RhinestoneModuleKit, Test {
             receiver: recipient
         });
 
-        sessionValidatorDigest = instance.installSessionKey({
+        (,sessionValidatorDigest) = instance.installSessionKey({
             sessionKeyModule: (address(sessionValidator)),
             validUntil: type(uint48).max,
             validAfter: 0,
