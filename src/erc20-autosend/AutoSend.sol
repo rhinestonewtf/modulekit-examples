@@ -30,7 +30,7 @@ contract AutoSendSessionKey is ERC7579ExecutorBase, ISessionValidationModule {
     error InvalidTarget();
     error InvalidRecipient();
 
-    mapping(address account => mapping(address token => SpentLog)) _log;
+    mapping(address account => mapping(address token => SpentLog)) internal _log;
 
     function encode(ExecutorAccess memory transaction) public pure returns (bytes memory) {
         return abi.encode(transaction);
