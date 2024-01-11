@@ -4,6 +4,7 @@ pragma solidity ^0.8.23;
 import "forge-std/Test.sol";
 import "modulekit/ModuleKit.sol";
 import "modulekit/Modules.sol";
+import "modulekit/Helpers.sol";
 import "modulekit/core/ExtensibleFallbackHandler.sol";
 import "modulekit/core/sessionKey/ISessionValidationModule.sol";
 import {
@@ -13,7 +14,7 @@ import "modulekit/Mocks.sol";
 import { Solarray } from "solarray/Solarray.sol";
 import { ECDSA } from "solady/src/utils/ECDSA.sol";
 
-import { IERC7579Execution } from "modulekit/ModuleKitLib.sol";
+import { IERC7579Execution } from "modulekit/Accounts.sol";
 import { FlashloanCallback } from "src/coldstorage-subaccount/FlashloanCallback.sol";
 import { FlashloanLender } from "src/coldstorage-subaccount/FlashloanLender.sol";
 import { ColdStorageHook } from "src/coldstorage-subaccount/ColdStorageHook.sol";

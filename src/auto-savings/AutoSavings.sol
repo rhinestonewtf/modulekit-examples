@@ -1,83 +1,101 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
-import "modulekit/modules/utils/ERC7579ValidatorLib.sol";
-import "modulekit/core/sessionKey/ISessionValidationModule.sol";
-import { ERC4626Integration } from "modulekit/integrations/ERC4626.sol";
-import { ERC20Integration } from "modulekit/integrations/ERC20.sol";
+import { ERC20Integration, ERC4626Integration } from "modulekit/Integrations.sol";
 import { IERC20 } from "forge-std/interfaces/IERC20.sol";
 import { IERC4626 } from "forge-std/interfaces/IERC4626.sol";
-import { IERC7579Execution } from "modulekit/ModuleKitLib.sol";
-import { ERC7579ExecutorBase } from "modulekit/Modules.sol";
+import { UniswapV3Integration } from "modulekit/Integrations.sol";
+import { IERC7579Execution } from "modulekit/Accounts.sol";
+import { ERC7579ExecutorBase, SessionKeyBase } from "modulekit/Modules.sol";
 
-contract AutoSavingToVault is ERC7579ExecutorBase, ISessionValidationModule {
+contract AutoSavingToVault is ERC7579ExecutorBase, SessionKeyBase {
     struct Params {
         address token;
-        address vault;
-        uint256 amount;
+        uint256 amountReceived;
     }
 
     struct ScopedAccess {
         address sessionKeySigner;
         address onlyToken;
-        address onlyVault;
+        uint256 maxAmount;
     }
 
-    struct SpentLog {
-        uint128 spent;
-        uint128 maxAmount;
+    struct Config {
+        uint16 percentage; // percentage to be saved to the vault
+        address vault;
+        uint128 sqrtPriceLimitX96;
     }
 
-    using ERC7579ValidatorLib for *;
     using ERC4626Integration for *;
 
-    error InvalidMethod(bytes4);
-    error InvalidValue();
-    error InvalidAmount();
-    error InvalidTarget();
-    error InvalidRecipient();
+    mapping(address account => mapping(address token => Config)) internal _config;
 
-    mapping(address account => mapping(address token => SpentLog)) internal _log;
+    function getConfig(address account, address token) public view returns (Config memory) {
+        return _config[account][token];
+    }
 
-    function getSpentLog(address account, address token) public view returns (SpentLog memory) {
-        return _log[account][token];
+    function setConfig(address token, Config memory config) public {
+        // TODO check for min / max sqrtPriceLimitX96
+        _config[msg.sender][token] = config;
     }
 
     function onInstall(bytes calldata data) external override {
-        (address[] memory tokens, SpentLog[] memory log) = abi.decode(data, (address[], SpentLog[]));
+        if (data.length == 0) return;
+        (address[] memory tokens, Config[] memory log) = abi.decode(data, (address[], Config[]));
 
         for (uint256 i; i < tokens.length; i++) {
-            _log[msg.sender][tokens[i]] = log[i];
+            _config[msg.sender][tokens[i]] = log[i];
         }
     }
 
     function onUninstall(bytes calldata data) external override { }
 
-    function autoSave(Params calldata params) external {
-        IERC4626 vault = IERC4626(params.vault);
+    function calcDepositAmount(
+        uint256 amountReceived,
+        uint256 percentage
+    )
+        public
+        pure
+        returns (uint256)
+    {
+        return amountReceived * percentage / 100;
+    }
 
+    function autoSave(Params calldata params) external {
+        // get vault that was configured for this token
+        Config memory conf = _config[msg.sender][params.token];
+        IERC4626 vault = IERC4626(conf.vault);
+
+        // calc amount that is subject to be saved
+        uint256 amountIn = calcDepositAmount(params.amountReceived, conf.percentage);
+
+        // if underlying asset is not the same as the token, add a swap
+        address underlying = vault.asset();
+        if (params.token != underlying) {
+            IERC7579Execution.Execution[] memory swap = UniswapV3Integration.approveAndSwap({
+                smartAccount: msg.sender,
+                tokenIn: IERC20(params.token),
+                tokenOut: IERC20(underlying),
+                amountIn: amountIn,
+                sqrtPriceLimitX96: conf.sqrtPriceLimitX96
+            });
+
+            // execute swap on account
+            bytes[] memory results = _execute(swap);
+            // get return data of swap, and set it as amountIn.
+            // this will be the actual amount that is subject to be saved
+            amountIn = abi.decode(results[1], (uint256));
+        }
+
+        // approve and deposit to vault
         IERC7579Execution.Execution[] memory approveAndDeposit =
             new IERC7579Execution.Execution[](2);
         approveAndDeposit[0] =
-            ERC20Integration.approve(IERC20(params.token), msg.sender, params.amount);
-        approveAndDeposit[1] = ERC4626Integration.deposit(vault, params.amount, msg.sender);
+            ERC20Integration.approve(IERC20(params.token), address(vault), amountIn);
+        approveAndDeposit[1] = ERC4626Integration.deposit(vault, amountIn, msg.sender);
 
-        IERC7579Execution(msg.sender).executeBatchFromExecutor(approveAndDeposit);
-    }
-
-    modifier onlyThis(address destinationContract) {
-        if (destinationContract != address(this)) revert InvalidTarget();
-        _;
-    }
-
-    modifier onlyFunctionSig(bytes4 allowed, bytes4 received) {
-        if (allowed != received) revert InvalidMethod(received);
-        _;
-    }
-
-    modifier onlyZeroValue(uint256 callValue) {
-        if (callValue != 0) revert InvalidValue();
-        _;
+        // execute deposit to vault on account
+        _execute(approveAndDeposit);
     }
 
     function validateSessionParams(
@@ -102,7 +120,7 @@ contract AutoSavingToVault is ERC7579ExecutorBase, ISessionValidationModule {
             revert InvalidRecipient();
         }
 
-        if (params.vault != access.onlyVault) {
+        if (params.amountReceived > access.maxAmount) {
             revert InvalidRecipient();
         }
 

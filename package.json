@@ -16,6 +16,7 @@
   "devDependencies": {
     "@rhinestone/modulekit": "link:../modulekitV2",
     "account-abstraction": "github:zeroknots/account-abstraction#develop",
+    "solmate": "github:transmissions11/solmate",
     "ds-test": "github:dapphub/ds-test",
     "erc7579": "github:erc7579/erc7579-implementation",
     "forge-std": "github:foundry-rs/forge-std",

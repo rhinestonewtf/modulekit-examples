@@ -40,6 +40,9 @@ devDependencies:
   solhint:
     specifier: ^4.1.1
     version: 4.1.1(typescript@5.3.3)
+  solmate:
+    specifier: github:transmissions11/solmate
+    version: github.com/transmissions11/solmate/4b47a19038b798b4a33d9749d25e570443520647
 
 packages:
 
@@ -3290,7 +3293,7 @@ packages:
     resolution: {integrity: sha512-uWjbaKIK3T1OSVptzX7Nl6PvQ3qAGtKEtVRjRuazjfL3Bx5eI409VZSqgND+4UNnmzLVdPj9FqFJNPqBZFve4w==}
     hasBin: true
     dependencies:
-      glob: 7.2.0
+      glob: 7.2.3
     dev: true
 
   /ripemd160@2.0.2:
@@ -3975,6 +3978,12 @@ packages:
     resolution: {tarball: https://codeload.github.com/sablier-labs/solarray/tar.gz/6bf10cb34cdace52a3ba5fe437e78cc82df92684}
     name: solarray
     version: 1.0.0
+    dev: true
+
+  github.com/transmissions11/solmate/4b47a19038b798b4a33d9749d25e570443520647:
+    resolution: {tarball: https://codeload.github.com/transmissions11/solmate/tar.gz/4b47a19038b798b4a33d9749d25e570443520647}
+    name: solmate
+    version: 6.2.0
     dev: true
 
   github.com/vectorized/solady/61612f187debb7affbe109543556666ef716ef69:

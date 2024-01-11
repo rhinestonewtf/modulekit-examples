@@ -4,7 +4,7 @@ pragma solidity ^0.8.23;
 import "modulekit/core/sessionKey/ISessionValidationModule.sol";
 import { IERC20 } from "forge-std/interfaces/IERC20.sol";
 import { UniswapV3Integration } from "modulekit/integrations/uniswap/v3/Uniswap.sol";
-import { IERC7579Execution } from "modulekit/ModuleKitLib.sol";
+import { IERC7579Execution } from "modulekit/Accounts.sol";
 import { ERC7579ExecutorBase } from "modulekit/Modules.sol";
 
 contract DollarCostAverage is ERC7579ExecutorBase, ISessionValidationModule {
@@ -114,7 +114,7 @@ contract DollarCostAverage is ERC7579ExecutorBase, ISessionValidationModule {
     }
 
     function name() external pure virtual override returns (string memory) {
-        return "AutoSend";
+        return "DollarCostAverage";
     }
 
     function version() external pure virtual override returns (string memory) {

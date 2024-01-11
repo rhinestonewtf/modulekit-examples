@@ -6,10 +6,10 @@ import { IERC721 } from "forge-std/interfaces/IERC721.sol";
 import { IERC20 } from "forge-std/interfaces/IERC20.sol";
 
 import { EnumerableMap } from "@openzeppelin/contracts/utils/structs/EnumerableMap.sol";
-import { ERC7579HookDeconstructor } from "modulekit/modules/ERC7579HookDeconstructor.sol";
-import { IERC7579Execution } from "modulekit/ModuleKitLib.sol";
+import { ERC7579HookDestruct } from "modulekit/modules/ERC7579HookDestruct.sol";
+import { IERC7579Execution } from "modulekit/Accounts.sol";
 
-contract ColdStorageHook is ERC7579HookDeconstructor {
+contract ColdStorageHook is ERC7579HookDestruct {
     error UnsupportedExecution();
     error UnauthorizedAccess();
 

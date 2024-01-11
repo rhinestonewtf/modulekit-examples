@@ -5,12 +5,10 @@ import { IFallbackMethod } from "modulekit/core/ExtensibleFallbackHandler.sol";
 import { ERC7579ExecutorBase } from "modulekit/Modules.sol";
 import "./interfaces/Flashloan.sol";
 
-import { ERC7579ExecutorLib } from "modulekit/ModuleKitLib.sol";
-
 pragma solidity ^0.8.20;
 
 contract FlashloanLender is IFallbackMethod, ERC7579ExecutorBase {
-    using ERC7579ExecutorLib for address;
+    // using ERC7579ExecutorLib for address;
 
     address immutable FALLBACK_HANDLER;
 
@@ -78,7 +76,8 @@ contract FlashloanLender is IFallbackMethod, ERC7579ExecutorBase {
         (FlashLoanType flashLoanType,,) = abi.decode(data, (FlashLoanType, bytes, bytes));
 
         if (flashLoanType == FlashLoanType.ERC721) {
-            account.execute(
+            _execute(
+                msg.sender,
                 address(token),
                 0,
                 abi.encodeCall(IERC721.transferFrom, (address(account), address(borrower), value))

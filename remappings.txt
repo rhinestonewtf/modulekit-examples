@@ -4,6 +4,7 @@ modulekit/=node_modules/@rhinestone/modulekit/src/
 account-abstraction/=node_modules/account-abstraction/contracts/
 erc7579/=node_modules/erc7579/src/
 sentinellist/=node_modules/sentinellist/src/
+solmate/=node_modules/solmate/src/
 solady/=node_modules/solady/
 solarray/=node_modules/solarray/src/
 @openzeppelin/=node_modules/@openzeppelin/

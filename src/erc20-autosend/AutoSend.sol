@@ -3,7 +3,7 @@ pragma solidity ^0.8.23;
 
 import "modulekit/core/sessionKey/ISessionValidationModule.sol";
 import { IERC20 } from "forge-std/interfaces/IERC20.sol";
-import { IERC7579Execution } from "modulekit/ModuleKitLib.sol";
+import { IERC7579Execution } from "modulekit/Accounts.sol";
 import { ERC7579ExecutorBase } from "modulekit/Modules.sol";
 
 contract AutoSendSessionKey is ERC7579ExecutorBase, ISessionValidationModule {
