@@ -27,11 +27,15 @@ contract ColdStorageHook is ERC7579HookDestruct {
 
     event ExecutionRequested(
         address indexed subAccount,
-        IERC7579Execution.Execution indexed exec,
-        uint256 indexed executeAfter
+        address target,
+        uint256 value,
+        bytes callData,
+        uint256 executeAfter
     );
 
-    event ExecutionExecuted(address indexed subAccount, IERC7579Execution.Execution indexed exec);
+    event ExecutionExecuted(
+        address indexed subAccount, address target, uint256 value, bytes callData
+    );
 
     function _getTokenTxReceiver(bytes calldata callData)
         internal
@@ -79,7 +83,7 @@ contract ColdStorageHook is ERC7579HookDestruct {
         // write executionHash to storage
         executions[msg.sender].set(executionHash, entry);
 
-        emit ExecutionRequested(msg.sender, _exec, executeAfter);
+        emit ExecutionRequested(msg.sender, _exec.target, _exec.value, _exec.callData, executeAfter);
     }
 
     function setWaitPeriod(uint256 waitPeriod) external {
@@ -165,10 +169,7 @@ contract ColdStorageHook is ERC7579HookDestruct {
             uint256 requestTimeStamp = uint256(entry);
             if (requestTimeStamp > block.timestamp) revert UnauthorizedAccess();
 
-            emit ExecutionExecuted(
-                msg.sender,
-                IERC7579Execution.Execution({ target: target, value: value, callData: callData })
-            );
+            emit ExecutionExecuted(msg.sender, target, value, callData);
 
             return abi.encode(PASS);
         }
