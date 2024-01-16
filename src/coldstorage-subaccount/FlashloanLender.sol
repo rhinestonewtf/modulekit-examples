@@ -104,7 +104,6 @@ contract FlashloanLender is IFallbackMethod, ERC7579ExecutorBase {
      * @param tokenId ID of the NFT.
      * @return total Fee amount for the specified NFT.
      */
-
     function _flashFee(
         address account,
         address token,

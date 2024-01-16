@@ -68,6 +68,7 @@ contract AutoSavingToVault is ERC7579ExecutorBase, SessionKeyBase {
 
         // calc amount that is subject to be saved
         uint256 amountIn = calcDepositAmount(params.amountReceived, conf.percentage);
+        IERC20 tokenToSave;
 
         // if underlying asset is not the same as the token, add a swap
         address underlying = vault.asset();
@@ -85,13 +86,15 @@ contract AutoSavingToVault is ERC7579ExecutorBase, SessionKeyBase {
             // get return data of swap, and set it as amountIn.
             // this will be the actual amount that is subject to be saved
             amountIn = abi.decode(results[1], (uint256));
-        }
+            // change tokenToSave to underlying
+            tokenToSave = IERC20(underlying);
+        } else tokenToSave = IERC20(params.token); // set tokenToSave to params.token since no swap was needed
 
         // approve and deposit to vault
         IERC7579Execution.Execution[] memory approveAndDeposit =
             new IERC7579Execution.Execution[](2);
         approveAndDeposit[0] =
-            ERC20Integration.approve(IERC20(params.token), address(vault), amountIn);
+            ERC20Integration.approve(tokenToSave, address(vault), amountIn);
         approveAndDeposit[1] = ERC4626Integration.deposit(vault, amountIn, msg.sender);
 
         // execute deposit to vault on account

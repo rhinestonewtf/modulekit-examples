@@ -68,7 +68,6 @@ library EllipticCurveP256 {
     /**
      * /* @dev inversion mod nusing little Fermat theorem via a^(n-2), use of precompiled
      */
-
     function FCL_pModInv(uint256 u) internal returns (uint256 result) {
         uint256[6] memory pointer;
         assembly {
@@ -202,7 +201,6 @@ library EllipticCurveP256 {
     /**
      * @dev Check if point is the neutral of the curve
      */
-
     function ecZZ_IsZero(
         uint256 x0,
         uint256 y0,
@@ -223,7 +221,6 @@ library EllipticCurveP256 {
      * @dev Return the zero curve in affine coordinates. Compatible with the double formulae (no
      * special case)
      */
-
     function ecAff_SetZero() internal pure returns (uint256 x, uint256 y) {
         return (0, 0);
     }
@@ -255,7 +252,6 @@ library EllipticCurveP256 {
     /**
      * @dev Add two elliptic curve points in affine coordinates.
      */
-
     function ecAff_add(
         uint256 x0,
         uint256 y0,
@@ -1027,7 +1023,6 @@ library EllipticCurveP256 {
      *     generation of contract bytecode for precomputations is done using sagemath code
      *     (see sage directory, WebAuthn_precompute.sage)
      */
-
     function ecdsa_precomputed_verify(
         bytes32 message,
         uint256[2] calldata rs,
@@ -1068,7 +1063,6 @@ library EllipticCurveP256 {
      *     generation of contract bytecode for precomputations is done using sagemath code
      *     (see sage directory, WebAuthn_precompute.sage)
      */
-
     function ecdsa_precomputed_hackmem(
         bytes32 message,
         uint256[2] calldata rs,

@@ -9,6 +9,8 @@ import "solmate/test/utils/mocks/MockERC20.sol";
 import "solmate/test/utils/mocks/MockERC4626.sol";
 import { AutoSavingToVault } from "src/auto-savings/AutoSavings.sol";
 
+import "forge-std/console2.sol";
+
 contract AutoSavingsTest is RhinestoneModuleKit, Test {
     using RhinestoneModuleKitLib for RhinestoneAccount;
 

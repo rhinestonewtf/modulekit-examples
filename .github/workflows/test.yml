@@ -1,6 +1,9 @@
 name: test
 
-on: workflow_dispatch
+on:
+  push:
+    paths-ignore:
+      - "**.md" # Exclude Markdown files from triggering the workflow
 
 env:
   FOUNDRY_PROFILE: ci
