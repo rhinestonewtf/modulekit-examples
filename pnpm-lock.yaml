@@ -11,8 +11,8 @@ dependencies:
 
 devDependencies:
   "@rhinestone/modulekit":
-    specifier: link:../modulekit
-    version: link:../modulekit
+    specifier: link:../modulekitV2
+    version: link:../modulekitV2
   "@rhinestone/sessionkeymanager":
     specifier: github:rhinestonewtf/sessionkeymanager
     version: git@github.com+rhinestonewtf/sessionkeymanager/100f86b662bc16fbd7df374cd665a35c10f3a7b6
