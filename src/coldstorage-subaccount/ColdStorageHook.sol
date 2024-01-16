@@ -25,7 +25,13 @@ contract ColdStorageHook is ERC7579HookDestruct {
     mapping(address subAccount => VaultConfig) internal vaultConfig;
     mapping(address subAccount => EnumerableMap.Bytes32ToBytes32Map) internal executions;
 
-    event WithdrawalRequested(address indexed subAccount, IERC7579Execution.Execution indexed exec);
+    event ExecutionRequested(
+        address indexed subAccount,
+        IERC7579Execution.Execution indexed exec,
+        uint256 indexed executeAfter
+    );
+
+    event ExecutionExecuted(address indexed subAccount, IERC7579Execution.Execution indexed exec);
 
     function _getTokenTxReceiver(bytes calldata callData)
         internal
@@ -40,15 +46,12 @@ contract ColdStorageHook is ERC7579HookDestruct {
             (, receiver,) = abi.decode(params, (address, address, uint256));
         } else if (functionSig == IERC721.transferFrom.selector) {
             (, receiver,) = abi.decode(params, (address, address, uint256));
-        } else {
-            revert("Invalid TokenTransfer");
         }
     }
 
     /**
      * Function that must be triggered from subaccount.
      * requests an execution to happen in the future
-     *
      */
     function requestTimelockedExecution(
         IERC7579Execution.Execution calldata _exec,
@@ -57,24 +60,33 @@ contract ColdStorageHook is ERC7579HookDestruct {
         external
     {
         VaultConfig memory _config = vaultConfig[msg.sender];
-        // get min wait period
         bytes32 executionHash = _execDigest(_exec.target, _exec.value, _exec.callData);
 
         if (_exec.callData.length != 0) {
             // check that transaction is only a token transfer
             address tokenReceiver = _getTokenTxReceiver(_exec.callData);
             if (tokenReceiver != _config.owner) {
-                revert("Invalid receiver transfer");
+                // Else check that transaction is to setWaitPeriod
+                if (bytes4(_exec.callData[0:4]) != this.setWaitPeriod.selector) {
+                    revert("Invalid receiver transfer");
+                }
             }
         }
 
-        uint256 earliestWithdraw = uint256(block.timestamp + _config.waitPeriod + additionalWait);
-        bytes32 entry = bytes32(earliestWithdraw);
+        uint256 executeAfter = uint256(block.timestamp + _config.waitPeriod + additionalWait);
+        bytes32 entry = bytes32(executeAfter);
 
         // write executionHash to storage
         executions[msg.sender].set(executionHash, entry);
 
-        emit WithdrawalRequested(msg.sender, _exec);
+        emit ExecutionRequested(msg.sender, _exec, executeAfter);
+    }
+
+    function setWaitPeriod(uint256 waitPeriod) external {
+        if (waitPeriod == 0) {
+            revert("Wait period cannot be 0");
+        }
+        vaultConfig[msg.sender].waitPeriod = uint128(waitPeriod);
     }
 
     function _execDigest(
@@ -153,7 +165,10 @@ contract ColdStorageHook is ERC7579HookDestruct {
             uint256 requestTimeStamp = uint256(entry);
             if (requestTimeStamp > block.timestamp) revert UnauthorizedAccess();
 
-            // check if transaction has been requested before
+            emit ExecutionExecuted(
+                msg.sender,
+                IERC7579Execution.Execution({ target: target, value: value, callData: callData })
+            );
 
             return abi.encode(PASS);
         }

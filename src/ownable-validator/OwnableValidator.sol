@@ -6,15 +6,11 @@ import { UserOperation } from "modulekit/external/ERC4337.sol";
 
 import { SignatureCheckerLib } from "solady/src/utils/SignatureCheckerLib.sol";
 
-import "forge-std/console2.sol";
-
 contract OwnableValidator is ERC7579ValidatorBase {
     mapping(address subAccout => address owner) public owners;
 
     function onInstall(bytes calldata data) external override {
-        console2.logBytes(data);
         address owner = abi.decode(data, (address));
-        console2.log("owner", owner);
         owners[msg.sender] = owner;
     }
 
