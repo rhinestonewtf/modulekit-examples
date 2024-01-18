@@ -15,7 +15,9 @@ import { SignatureCheckerLib } from "solady/src/utils/SignatureCheckerLib.sol";
 import { Solarray } from "solarray/Solarray.sol";
 
 contract AutoSendTest is RhinestoneModuleKit, Test {
-    using RhinestoneModuleKitLib for RhinestoneAccount;
+    using ModuleKitHelpers for *;
+    using ModuleKitUserOp for *;
+    using ModuleKitSCM for *;
 
     RhinestoneAccount internal instance;
 
@@ -37,7 +39,7 @@ contract AutoSendTest is RhinestoneModuleKit, Test {
         token.initialize("Mock Token", "MTK", 18);
         deal(address(token), instance.account, 100 ether);
 
-        sessionValidator = new AutoSendSessionKey ();
+        sessionValidator = new AutoSendSessionKey();
         target = new MockTarget();
         recipient = makeAddr("recipient");
 
@@ -82,13 +84,13 @@ contract AutoSendTest is RhinestoneModuleKit, Test {
         bytes[] memory sessionKeySignatures = Solarray.bytess(
             sign(keySignerPk1, sessionValidatorDigest), sign(keySignerPk1, sessionValidatorDigest)
         );
-        instance.exec4337({
+        instance.getExecOps({
             targets: targets,
             values: values,
             callDatas: calldatas,
             sessionKeyDigests: sessionKeyDigests,
             sessionKeySignatures: sessionKeySignatures
-        });
+        }).execUserOps();
 
         assertEq(token.balanceOf(recipient), 66);
 
@@ -113,13 +115,13 @@ contract AutoSendTest is RhinestoneModuleKit, Test {
             SignatureCheckerLib.isValidSignatureNow(keySigner1, sessionValidatorDigest, sig);
 
         assertTrue(isValid);
-        instance.exec4337({
+        instance.getExecOps({
             target: address(sessionValidator),
             value: 0,
             callData: abi.encodeCall(AutoSendSessionKey.autoSend, (params)),
             sessionKeyDigest: sessionValidatorDigest,
             sessionKeySignature: sig
-        });
+        }).execUserOps();
 
         assertEq(token.balanceOf(recipient), 33);
     }
