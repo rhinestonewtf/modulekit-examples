@@ -55,7 +55,8 @@ contract AutoSendTest is RhinestoneModuleKit, Test {
             sessionKeyModule: (address(sessionValidator)),
             validUntil: type(uint48).max,
             validAfter: 0,
-            sessionKeyData: sessionValidator.encode(_tx1)
+            sessionKeyData: sessionValidator.encode(_tx1),
+            txValidator: address(instance.defaultValidator)
         });
 
         // params for executor install
@@ -89,7 +90,8 @@ contract AutoSendTest is RhinestoneModuleKit, Test {
             values: values,
             callDatas: calldatas,
             sessionKeyDigests: sessionKeyDigests,
-            sessionKeySignatures: sessionKeySignatures
+            sessionKeySignatures: sessionKeySignatures,
+            txValidator: address(instance.defaultValidator)
         }).execUserOps();
 
         assertEq(token.balanceOf(recipient), 66);
@@ -120,7 +122,8 @@ contract AutoSendTest is RhinestoneModuleKit, Test {
             value: 0,
             callData: abi.encodeCall(AutoSendSessionKey.autoSend, (params)),
             sessionKeyDigest: sessionValidatorDigest,
-            sessionKeySignature: sig
+            sessionKeySignature: sig,
+            txValidator: address(instance.defaultValidator)
         }).execUserOps();
 
         assertEq(token.balanceOf(recipient), 33);

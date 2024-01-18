@@ -57,7 +57,8 @@ contract AutoSavingsTest is RhinestoneModuleKit, Test {
             sessionKeyModule: address(autosavings),
             validUntil: uint48(block.timestamp + 7 days),
             validAfter: uint48(block.timestamp - 7 days),
-            sessionKeyData: sessionKeyData
+            sessionKeyData: sessionKeyData,
+            txValidator: address(instance.defaultValidator)
         });
 
         AutoSavingToVault.Config memory savingForToken = AutoSavingToVault.Config({
@@ -88,7 +89,8 @@ contract AutoSavingsTest is RhinestoneModuleKit, Test {
             value: 0,
             callData: abi.encodeCall(AutoSavingToVault.autoSave, (params)),
             sessionKeyDigest: sessionKeyDigest,
-            sessionKeySignature: ecdsaSign(signer.key, sessionKeyDigest)
+            sessionKeySignature: ecdsaSign(signer.key, sessionKeyDigest),
+            txValidator: address(instance.defaultValidator)
         }).execUserOps();
         // It should deposit correct percentage
         // It should update spending limit

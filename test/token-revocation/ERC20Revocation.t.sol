@@ -55,7 +55,8 @@ contract ERC20RevocationTest is RhinestoneModuleKit, Test {
             sessionKeyModule: (address(sessionValidator)),
             validUntil: type(uint48).max,
             validAfter: 0,
-            sessionKeyData: sessionValidator.encode(_tx1)
+            sessionKeyData: sessionValidator.encode(_tx1),
+            txValidator: address(instance.defaultValidator)
         });
 
         userOpData.execUserOps();
@@ -84,7 +85,8 @@ contract ERC20RevocationTest is RhinestoneModuleKit, Test {
             values: values,
             callDatas: calldatas,
             sessionKeyDigests: sessionKeyDigests,
-            sessionKeySignatures: sessionKeySignatures
+            sessionKeySignatures: sessionKeySignatures,
+            txValidator: address(instance.defaultValidator)
         }).execUserOps();
 
         assertEq(token.allowance(instance.account, recipient), 0);
@@ -108,7 +110,8 @@ contract ERC20RevocationTest is RhinestoneModuleKit, Test {
             value: 0,
             callData: abi.encodeCall(MockERC20.approve, (recipient, 0)),
             sessionKeyDigest: sessionValidatorDigest,
-            sessionKeySignature: sig
+            sessionKeySignature: sig,
+            txValidator: address(instance.defaultValidator)
         }).execUserOps();
 
         assertEq(token.allowance(instance.account, recipient), 0);
