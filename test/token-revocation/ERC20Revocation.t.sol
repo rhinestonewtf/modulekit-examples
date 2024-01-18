@@ -15,7 +15,9 @@ import { SignatureCheckerLib } from "solady/src/utils/SignatureCheckerLib.sol";
 import { Solarray } from "solarray/Solarray.sol";
 
 contract ERC20RevocationTest is RhinestoneModuleKit, Test {
-    using RhinestoneModuleKitLib for RhinestoneAccount;
+    using ModuleKitHelpers for *;
+    using ModuleKitUserOp for *;
+    using ModuleKitSCM for *;
 
     RhinestoneAccount internal instance;
 
@@ -48,13 +50,16 @@ contract ERC20RevocationTest is RhinestoneModuleKit, Test {
             tokenType: ERC20Revocation.TokenType.ERC20,
             sessionKeySigner: keySigner1
         });
-
-        (, sessionValidatorDigest) = instance.installSessionKey({
+        UserOpData memory userOpData;
+        (userOpData, sessionValidatorDigest) = instance.installSessionKey({
             sessionKeyModule: (address(sessionValidator)),
             validUntil: type(uint48).max,
             validAfter: 0,
-            sessionKeyData: sessionValidator.encode(_tx1)
+            sessionKeyData: sessionValidator.encode(_tx1),
+            txValidator: address(instance.defaultValidator)
         });
+
+        userOpData.execUserOps();
 
         vm.prank(instance.account);
         token.approve(recipient, 100);
@@ -75,13 +80,14 @@ contract ERC20RevocationTest is RhinestoneModuleKit, Test {
         bytes[] memory sessionKeySignatures = Solarray.bytess(
             sign(keySignerPk1, sessionValidatorDigest), sign(keySignerPk1, sessionValidatorDigest)
         );
-        instance.exec4337({
+        instance.getExecOps({
             targets: targets,
             values: values,
             callDatas: calldatas,
             sessionKeyDigests: sessionKeyDigests,
-            sessionKeySignatures: sessionKeySignatures
-        });
+            sessionKeySignatures: sessionKeySignatures,
+            txValidator: address(instance.defaultValidator)
+        }).execUserOps();
 
         assertEq(token.allowance(instance.account, recipient), 0);
     }
@@ -99,13 +105,14 @@ contract ERC20RevocationTest is RhinestoneModuleKit, Test {
             SignatureCheckerLib.isValidSignatureNow(keySigner1, sessionValidatorDigest, sig);
 
         assertTrue(isValid);
-        instance.exec4337({
+        instance.getExecOps({
             target: address(token),
             value: 0,
             callData: abi.encodeCall(MockERC20.approve, (recipient, 0)),
             sessionKeyDigest: sessionValidatorDigest,
-            sessionKeySignature: sig
-        });
+            sessionKeySignature: sig,
+            txValidator: address(instance.defaultValidator)
+        }).execUserOps();
 
         assertEq(token.allowance(instance.account, recipient), 0);
     }

@@ -4,6 +4,7 @@ pragma solidity ^0.8.21;
 import { ERC7579ValidatorBase, ERC7579HookBase } from "modulekit/Modules.sol";
 import { UserOperation } from "modulekit/ModuleKit.sol";
 import { SignatureCheckerLib } from "solady/src/utils/SignatureCheckerLib.sol";
+import { ECDSA } from "solady/src/utils/ECDSA.sol";
 
 contract DeadmanSwitch is ERC7579HookBase, ERC7579ValidatorBase {
     using SignatureCheckerLib for address;
@@ -21,12 +22,17 @@ contract DeadmanSwitch is ERC7579HookBase, ERC7579ValidatorBase {
     error MissingCondition();
 
     function onInstall(bytes calldata data) external {
+        if (data.length == 0) return;
         (address nominee, uint48 timeout) = abi.decode(data, (address, uint48));
         DeadmanSwitchStorage storage config = _lastAccess[msg.sender];
 
         config.lastAccess = uint48(block.timestamp);
         config.timeout = timeout;
         config.nominee = nominee;
+    }
+
+    function lastAccess(address account) external view returns (uint48) {
+        return _lastAccess[account].lastAccess;
     }
 
     function onUninstall(bytes calldata) external override {
@@ -59,16 +65,21 @@ contract DeadmanSwitch is ERC7579HookBase, ERC7579ValidatorBase {
         bytes32 userOpHash
     )
         external
+        view
         override
         returns (ValidationData)
     {
         DeadmanSwitchStorage memory config = _lastAccess[userOp.sender];
         if (config.nominee == address(0)) return VALIDATION_FAILED;
-        bool isValid = config.nominee.isValidSignatureNow(userOpHash, userOp.signature);
+        bool sigValid = config.nominee.isValidSignatureNow({
+            hash: ECDSA.toEthSignedMessageHash(userOpHash),
+            signature: userOp.signature
+        });
+
         return _packValidationData({
-            sigFailed: !isValid,
-            validUntil: config.lastAccess + config.timeout,
-            validAfter: type(uint48).max
+            sigFailed: !sigValid,
+            validAfter: config.lastAccess + config.timeout,
+            validUntil: type(uint48).max
         });
     }
 

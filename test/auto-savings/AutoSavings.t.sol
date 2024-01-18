@@ -12,7 +12,9 @@ import { AutoSavingToVault } from "src/auto-savings/AutoSavings.sol";
 import "forge-std/console2.sol";
 
 contract AutoSavingsTest is RhinestoneModuleKit, Test {
-    using RhinestoneModuleKitLib for RhinestoneAccount;
+    using ModuleKitHelpers for *;
+    using ModuleKitSCM for *;
+    using ModuleKitUserOp for *;
 
     RhinestoneAccount internal instance;
     AutoSavingToVault internal autosavings;
@@ -55,7 +57,8 @@ contract AutoSavingsTest is RhinestoneModuleKit, Test {
             sessionKeyModule: address(autosavings),
             validUntil: uint48(block.timestamp + 7 days),
             validAfter: uint48(block.timestamp - 7 days),
-            sessionKeyData: sessionKeyData
+            sessionKeyData: sessionKeyData,
+            txValidator: address(instance.defaultValidator)
         });
 
         AutoSavingToVault.Config memory savingForToken = AutoSavingToVault.Config({
@@ -81,13 +84,14 @@ contract AutoSavingsTest is RhinestoneModuleKit, Test {
         // It should deposit
         AutoSavingToVault.Params memory params =
             AutoSavingToVault.Params({ token: address(tokenIn), amountReceived: 100 });
-        instance.exec4337({
+        instance.getExecOps({
             target: address(autosavings),
             value: 0,
             callData: abi.encodeCall(AutoSavingToVault.autoSave, (params)),
             sessionKeyDigest: sessionKeyDigest,
-            sessionKeySignature: ecdsaSign(signer.key, sessionKeyDigest)
-        });
+            sessionKeySignature: ecdsaSign(signer.key, sessionKeyDigest),
+            txValidator: address(instance.defaultValidator)
+        }).execUserOps();
         // It should deposit correct percentage
         // It should update spending limit
     }

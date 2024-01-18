@@ -25,7 +25,8 @@ import { ERC7579BootstrapConfig } from "modulekit/external/ERC7579.sol";
 import "src/coldstorage-subaccount/interfaces/Flashloan.sol";
 
 contract ColdStorageTest is RhinestoneModuleKit, Test {
-    using RhinestoneModuleKitLib for RhinestoneAccount;
+    using ModuleKitHelpers for *;
+    using ModuleKitUserOp for *;
     using ECDSA for bytes32;
 
     MockERC20 internal token;
@@ -42,8 +43,7 @@ contract ColdStorageTest is RhinestoneModuleKit, Test {
 
     MockValidator internal mockValidator;
 
-    uint256 ownerPk;
-    address owner;
+    Account owner;
 
     function setUp() public {
         init();
@@ -60,6 +60,7 @@ contract ColdStorageTest is RhinestoneModuleKit, Test {
         coldStorageHook = new ColdStorageHook();
         vm.label(address(coldStorageHook), "coldStorageHook");
 
+        owner = makeAccount("owner");
         _setupMainAccount();
         _setUpColdstorage();
 
@@ -68,21 +69,28 @@ contract ColdStorageTest is RhinestoneModuleKit, Test {
 
         token = new MockERC20();
         token.initialize("Mock Token", "MTK", 18);
-        deal(address(token), coldStorage.account, 100 ether);
+        deal(address(token), mainAccount.account, 100 ether);
 
-        (owner, ownerPk) = makeAddrAndKey("owner");
+        console2.log("owner", owner.addr);
         vm.warp(1_799_999);
+
+        mainAccount.exec({
+            target: address(token),
+            value: 0,
+            callData: abi.encodeCall(IERC20.transfer, (address(coldStorage.account), 1 ether))
+        });
     }
 
     function _setupMainAccount() public {
-        ExtensibleFallbackHandler.Params memory params = ExtensibleFallbackHandler.Params({
+        ExtensibleFallbackHandler.Params[] memory params = new ExtensibleFallbackHandler.Params[](1);
+        params[0] = ExtensibleFallbackHandler.Params({
             selector: IERC3156FlashBorrower.onFlashLoan.selector,
             fallbackType: ExtensibleFallbackHandler.FallBackType.Dynamic,
             handler: address(flashloanCallback)
         });
 
         ERC7579BootstrapConfig[] memory validators =
-            makeBootstrapConfig(address(mockValidator), abi.encode(""));
+            makeBootstrapConfig(address(ownableValidator), abi.encode(owner.addr));
         ERC7579BootstrapConfig[] memory executors =
             makeBootstrapConfig(address(flashloanCallback), abi.encode(""));
         ERC7579BootstrapConfig memory hook = _emptyConfig();
@@ -148,40 +156,42 @@ contract ColdStorageTest is RhinestoneModuleKit, Test {
     )
         internal
     {
-        bytes memory execCallData = ERC7579Helpers.encode({
-            target: address(coldStorageHook),
-            value: 0,
-            callData: abi.encodeCall(
-                ColdStorageHook.requestTimelockedExecution, (exec, additionalDelay)
-                )
-        });
-
-        UserOperation memory userOp = coldStorage.toUserOp(execCallData);
-        bytes32 userOpHash = coldStorage.hashUserOp(userOp);
-
-        bytes memory signature = abi.encodePacked(address(mockValidator), "");
-        coldStorage.exec4337({
+        UserOpData memory userOpData = coldStorage.getExecOps({
             target: address(coldStorageHook),
             value: 0,
             callData: abi.encodeCall(
                 ColdStorageHook.requestTimelockedExecution, (exec, additionalDelay)
                 ),
-            signature: signature,
-            validator: address(ownableValidator)
+            txValidator: address(ownableValidator)
         });
+
+        bytes memory signature = signHash(owner.key, userOpData.userOpHash);
+        address recover =
+            ECDSA.recover(ECDSA.toEthSignedMessageHash(userOpData.userOpHash), signature);
+        assertEq(recover, owner.addr);
+        signature = abi.encodePacked(address(ownableValidator), signature);
+        userOpData.userOp.signature = signature;
+        userOpData.execUserOps();
+    }
+
+    function signHash(uint256 privKey, bytes32 digest) internal returns (bytes memory) {
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(privKey, ECDSA.toEthSignedMessageHash(digest));
+        return abi.encodePacked(r, s, v);
     }
 
     function _execWithdraw(IERC7579Execution.Execution memory exec) internal {
-        bytes memory callData = ERC7579Helpers.encode(exec.target, exec.value, exec.callData);
-        UserOperation memory userOp = coldStorage.toUserOp(callData);
-        bytes32 userOpHash = coldStorage.hashUserOp(userOp);
-        bytes memory signature = abi.encodePacked(address(mockValidator), "");
+        UserOpData memory userOpData = coldStorage.getExecOps(
+            exec.target, exec.value, exec.callData, address(ownableValidator)
+        );
+        bytes memory signature = signHash(owner.key, userOpData.userOpHash);
+        address recover =
+            ECDSA.recover(ECDSA.toEthSignedMessageHash(userOpData.userOpHash), signature);
+        assertEq(recover, owner.addr);
 
-        coldStorage.exec4337({
-            userOp: userOp,
-            signature: signature,
-            validator: address(ownableValidator)
-        });
+        signature = abi.encodePacked(address(ownableValidator), signature);
+        userOpData.userOp.signature = signature;
+
+        userOpData.execUserOps();
     }
 
     function test_withdraw() public {
