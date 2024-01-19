@@ -22,7 +22,7 @@ contract ColdStorageHook is ERC7579HookDestruct {
         address owner;
     }
 
-    mapping(address subAccount => VaultConfig) internal vaultConfig;
+    mapping(address subAccount => VaultConfig) public vaultConfig;
     mapping(address subAccount => EnumerableMap.Bytes32ToBytes32Map) internal executions;
 
     event ExecutionRequested(

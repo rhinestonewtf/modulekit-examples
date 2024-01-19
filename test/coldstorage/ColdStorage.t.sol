@@ -203,11 +203,14 @@ contract ColdStorageTest is RhinestoneModuleKit, Test {
     }
 
     function test_withdraw() public {
+        uint256 prevBalance = token.balanceOf(address(mainAccount.account));
+        uint256 amountToWithdraw = 100;
+
         IERC7579Execution.Execution memory action = IERC7579Execution.Execution({
             target: address(token),
             value: 0,
             callData: abi.encodeWithSelector(
-                MockERC20.transfer.selector, address(mainAccount.account), 100
+                MockERC20.transfer.selector, address(mainAccount.account), amountToWithdraw
                 )
         });
 
@@ -215,13 +218,18 @@ contract ColdStorageTest is RhinestoneModuleKit, Test {
 
         vm.warp(block.timestamp + 8 days);
         _execWithdraw(action);
+
+        uint256 newBalance = token.balanceOf(address(mainAccount.account));
+        assertEq(newBalance, prevBalance + amountToWithdraw);
     }
 
     function test_setWaitPeriod() public {
+        uint256 newWaitPeriod = 2 days;
+
         IERC7579Execution.Execution memory action = IERC7579Execution.Execution({
             target: address(coldStorage.account),
             value: 0,
-            callData: abi.encodeWithSelector(ColdStorageHook.setWaitPeriod.selector, (2 days))
+            callData: abi.encodeWithSelector(ColdStorageHook.setWaitPeriod.selector, (newWaitPeriod))
         });
 
         _requestWithdraw(action, 0);
@@ -239,7 +247,10 @@ contract ColdStorageTest is RhinestoneModuleKit, Test {
 
         _requestWithdraw(newAction, 0);
 
-        vm.warp(block.timestamp + 2 days);
+        vm.warp(block.timestamp + newWaitPeriod);
         _execWithdraw(newAction);
+
+        (uint128 updatedWaitPeriod,) = coldStorageHook.vaultConfig(address(coldStorage.account));
+        assertEq(updatedWaitPeriod, uint128(newWaitPeriod));
     }
 }
