@@ -184,13 +184,8 @@ contract ColdStorageTest is RhinestoneModuleKit, Test {
             exec.target, exec.value, exec.callData, address(ownableValidator)
         );
         bytes memory signature = signHash(owner.key, userOpData.userOpHash);
-        address recover =
-            ECDSA.recover(ECDSA.toEthSignedMessageHash(userOpData.userOpHash), signature);
-        assertEq(recover, owner.addr);
-
-        signature = abi.encodePacked(address(ownableValidator), signature);
-        userOpData.userOp.signature = signature;
-
+        // encode ownableValidator for ERC1271
+        userOpData.userOp.signature = abi.encodePacked(address(ownableValidator), signature);
         userOpData.execUserOps();
     }
 
