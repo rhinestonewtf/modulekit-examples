@@ -203,4 +203,30 @@ contract ColdStorageTest is RhinestoneModuleKit, Test {
         vm.warp(block.timestamp + 8 days);
         _execWithdraw(action);
     }
+
+    function test_setWaitPeriod() public {
+        IERC7579Execution.Execution memory action = IERC7579Execution.Execution({
+            target: address(coldStorageHook),
+            value: 0,
+            callData: abi.encodeWithSelector(ColdStorageHook.setWaitPeriod.selector, (2 days))
+        });
+
+        _requestWithdraw(action, 0);
+
+        vm.warp(block.timestamp + 8 days);
+        _execWithdraw(action);
+
+        IERC7579Execution.Execution memory newAction = IERC7579Execution.Execution({
+            target: address(token),
+            value: 0,
+            callData: abi.encodeWithSelector(
+                MockERC20.transfer.selector, address(mainAccount.account), 100
+                )
+        });
+
+        _requestWithdraw(newAction, 0);
+
+        vm.warp(block.timestamp + 2 days);
+        _execWithdraw(newAction);
+    }
 }
