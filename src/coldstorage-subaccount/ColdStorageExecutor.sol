@@ -7,7 +7,7 @@ import { ERC7579ExecutorBase } from "modulekit/Modules.sol";
 contract ColdStorageExecutor is ERC7579ExecutorBase {
     error UnauthorizedAccess();
 
-    mapping(address => address) private _subAccountOwner;
+    mapping(address subAccount => address owner) private _subAccountOwner;
 
     function executeOnSubAccount(
         address subAccount,
@@ -22,12 +22,11 @@ contract ColdStorageExecutor is ERC7579ExecutorBase {
             revert UnauthorizedAccess();
         }
 
-        IERC7579Execution smartAccount = IERC7579Execution(subAccount);
-        smartAccount.executeFromExecutor(target, value, callData);
+        IERC7579Execution(subAccount).executeFromExecutor(target, value, callData);
     }
 
     function onInstall(bytes calldata data) external override {
-        address owner = abi.decode(data, (address));
+        address owner = address(bytes20(data[0:20]));
         _subAccountOwner[msg.sender] = owner;
     }
 

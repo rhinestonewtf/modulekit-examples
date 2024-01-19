@@ -147,7 +147,7 @@ contract ColdStorageTest is RhinestoneModuleKit, Test {
         addresses[1] = address(coldStorageExecutor);
 
         callData[0] = abi.encode("");
-        callData[1] = abi.encode(address(mainAccount.account));
+        callData[1] = abi.encodePacked(address(mainAccount.account));
 
         ERC7579BootstrapConfig[] memory executors = makeBootstrapConfig(addresses, callData);
 
@@ -172,10 +172,18 @@ contract ColdStorageTest is RhinestoneModuleKit, Test {
         internal
     {
         UserOpData memory userOpData = mainAccount.getExecOps({
-            target: address(coldStorage.account),
+            target: address(coldStorageExecutor),
             value: 0,
             callData: abi.encodeCall(
-                ColdStorageHook.requestTimelockedExecution, (exec, additionalDelay)
+                ColdStorageExecutor.executeOnSubAccount,
+                (
+                    address(coldStorage.account),
+                    address(coldStorageHook),
+                    0,
+                    abi.encodeWithSelector(
+                        ColdStorageHook.requestTimelockedExecution.selector, exec, additionalDelay
+                        )
+                )
                 ),
             txValidator: address(ownableValidator)
         });
@@ -188,15 +196,32 @@ contract ColdStorageTest is RhinestoneModuleKit, Test {
         userOpData.execUserOps();
     }
 
+    function _deplySubAccount() private {
+        // create and exec an empty user op to deploy the sub account
+        UserOpData memory userOpData =
+            coldStorage.getExecOps(address(0), 0, "", address(ownableValidator));
+
+        bytes memory signature = signHash(owner.key, userOpData.userOpHash);
+        signature = abi.encodePacked(address(ownableValidator), signature);
+        userOpData.userOp.signature = signature;
+        userOpData.execUserOps();
+    }
+
     function signHash(uint256 privKey, bytes32 digest) internal returns (bytes memory) {
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(privKey, ECDSA.toEthSignedMessageHash(digest));
         return abi.encodePacked(r, s, v);
     }
 
     function _execWithdraw(IERC7579Execution.Execution memory exec) internal {
-        UserOpData memory userOpData = mainAccount.getExecOps(
-            exec.target, exec.value, exec.callData, address(ownableValidator)
-        );
+        UserOpData memory userOpData = mainAccount.getExecOps({
+            target: address(coldStorageExecutor),
+            value: 0,
+            callData: abi.encodeCall(
+                ColdStorageExecutor.executeOnSubAccount,
+                (address(coldStorage.account), exec.target, exec.value, exec.callData)
+                ),
+            txValidator: address(ownableValidator)
+        });
         bytes memory signature = signHash(owner.key, userOpData.userOpHash);
         userOpData.userOp.signature = signature;
         userOpData.execUserOps();
@@ -205,6 +230,8 @@ contract ColdStorageTest is RhinestoneModuleKit, Test {
     function test_withdraw() public {
         uint256 prevBalance = token.balanceOf(address(mainAccount.account));
         uint256 amountToWithdraw = 100;
+
+        _deplySubAccount();
 
         IERC7579Execution.Execution memory action = IERC7579Execution.Execution({
             target: address(token),
@@ -224,10 +251,12 @@ contract ColdStorageTest is RhinestoneModuleKit, Test {
     }
 
     function test_setWaitPeriod() public {
+        _deplySubAccount();
+
         uint256 newWaitPeriod = 2 days;
 
         IERC7579Execution.Execution memory action = IERC7579Execution.Execution({
-            target: address(coldStorage.account),
+            target: address(coldStorageHook),
             value: 0,
             callData: abi.encodeWithSelector(ColdStorageHook.setWaitPeriod.selector, (newWaitPeriod))
         });
@@ -250,7 +279,7 @@ contract ColdStorageTest is RhinestoneModuleKit, Test {
         vm.warp(block.timestamp + newWaitPeriod);
         _execWithdraw(newAction);
 
-        (uint128 updatedWaitPeriod,) = coldStorageHook.vaultConfig(address(coldStorage.account));
+        uint256 updatedWaitPeriod = coldStorageHook.getLockTime(address(coldStorage.account));
         assertEq(updatedWaitPeriod, uint128(newWaitPeriod));
     }
 }

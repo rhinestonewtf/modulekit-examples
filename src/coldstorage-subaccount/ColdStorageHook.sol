@@ -22,7 +22,7 @@ contract ColdStorageHook is ERC7579HookDestruct {
         address owner;
     }
 
-    mapping(address subAccount => VaultConfig) public vaultConfig;
+    mapping(address subAccount => VaultConfig) internal vaultConfig;
     mapping(address subAccount => EnumerableMap.Bytes32ToBytes32Map) internal executions;
 
     event ExecutionRequested(
@@ -289,6 +289,10 @@ contract ColdStorageHook is ERC7579HookDestruct {
         returns (bytes memory hookData)
     {
         revert UnsupportedExecution();
+    }
+
+    function getLockTime(address subAccount) public view returns (uint256) {
+        return vaultConfig[subAccount].waitPeriod;
     }
 
     function version() external pure virtual override returns (string memory) {
