@@ -155,24 +155,7 @@ contract ColdStorageHook is ERC7579HookDestruct {
         override
         returns (bytes memory hookData)
     {
-        bytes4 functionSig = bytes4(callData[0:4]);
-
-        // check if call is a requestTimelockedExecution
-        if (target == address(this) && functionSig == this.requestTimelockedExecution.selector) {
-            return abi.encode(this.requestTimelockedExecution.selector);
-        } else {
-            bytes32 executionHash = _execDigestMemory(target, value, callData);
-            (bool success, bytes32 entry) = executions[msg.sender].tryGet(executionHash);
-
-            if (!success) revert UnauthorizedAccess();
-
-            uint256 requestTimeStamp = uint256(entry);
-            if (requestTimeStamp > block.timestamp) revert UnauthorizedAccess();
-
-            emit ExecutionExecuted(msg.sender, target, value, callData);
-
-            return abi.encode(PASS);
-        }
+        revert UnsupportedExecution();
     }
 
     function onExecuteBatch(
@@ -198,7 +181,24 @@ contract ColdStorageHook is ERC7579HookDestruct {
         override
         returns (bytes memory hookData)
     {
-        revert UnsupportedExecution();
+        bytes4 functionSig = bytes4(callData[0:4]);
+
+        // check if call is a requestTimelockedExecution
+        if (target == address(this) && functionSig == this.requestTimelockedExecution.selector) {
+            return abi.encode(this.requestTimelockedExecution.selector);
+        } else {
+            bytes32 executionHash = _execDigestMemory(target, value, callData);
+            (bool success, bytes32 entry) = executions[msg.sender].tryGet(executionHash);
+
+            if (!success) revert UnauthorizedAccess();
+
+            uint256 requestTimeStamp = uint256(entry);
+            if (requestTimeStamp > block.timestamp) revert UnauthorizedAccess();
+
+            emit ExecutionExecuted(msg.sender, target, value, callData);
+
+            return abi.encode(PASS);
+        }
     }
 
     function onExecuteBatchFromExecutor(

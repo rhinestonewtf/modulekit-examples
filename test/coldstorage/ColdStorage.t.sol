@@ -18,6 +18,7 @@ import { IERC7579Execution } from "modulekit/Accounts.sol";
 import { FlashloanCallback } from "src/coldstorage-subaccount/FlashloanCallback.sol";
 import { FlashloanLender } from "src/coldstorage-subaccount/FlashloanLender.sol";
 import { ColdStorageHook } from "src/coldstorage-subaccount/ColdStorageHook.sol";
+import { ColdStorageExecutor } from "src/coldstorage-subaccount/ColdStorageExecutor.sol";
 import { OwnableValidator } from "src/ownable-validator/OwnableValidator.sol";
 
 import { ERC7579BootstrapConfig } from "modulekit/external/ERC7579.sol";
@@ -39,6 +40,7 @@ contract ColdStorageTest is RhinestoneModuleKit, Test {
     RhinestoneAccount internal coldStorage;
     FlashloanLender internal flashloanLender;
     ColdStorageHook internal coldStorageHook;
+    ColdStorageExecutor internal coldStorageExecutor;
     OwnableValidator internal ownableValidator;
 
     MockValidator internal mockValidator;
@@ -59,6 +61,9 @@ contract ColdStorageTest is RhinestoneModuleKit, Test {
 
         coldStorageHook = new ColdStorageHook();
         vm.label(address(coldStorageHook), "coldStorageHook");
+
+        coldStorageExecutor = new ColdStorageExecutor();
+        vm.label(address(coldStorageExecutor), "coldStorageExecutor");
 
         owner = makeAccount("owner");
         _setupMainAccount();
@@ -134,8 +139,18 @@ contract ColdStorageTest is RhinestoneModuleKit, Test {
 
         ERC7579BootstrapConfig[] memory validators =
             makeBootstrapConfig(address(ownableValidator), abi.encode(address(mainAccount.account)));
-        ERC7579BootstrapConfig[] memory executors =
-            makeBootstrapConfig(address(flashloanLender), abi.encode(""));
+
+        address[] memory addresses = new address[](2);
+        bytes[] memory callData = new bytes[](2);
+
+        addresses[0] = address(flashloanLender);
+        addresses[1] = address(coldStorageExecutor);
+
+        callData[0] = abi.encode("");
+        callData[1] = abi.encode(address(mainAccount.account));
+
+        ERC7579BootstrapConfig[] memory executors = makeBootstrapConfig(addresses, callData);
+
         ERC7579BootstrapConfig memory hook = _makeBootstrapConfig(
             address(coldStorageHook), abi.encode(uint128(7 days), address(mainAccount.account))
         );
@@ -156,8 +171,8 @@ contract ColdStorageTest is RhinestoneModuleKit, Test {
     )
         internal
     {
-        UserOpData memory userOpData = coldStorage.getExecOps({
-            target: address(coldStorageHook),
+        UserOpData memory userOpData = mainAccount.getExecOps({
+            target: address(coldStorage.account),
             value: 0,
             callData: abi.encodeCall(
                 ColdStorageHook.requestTimelockedExecution, (exec, additionalDelay)
@@ -169,7 +184,6 @@ contract ColdStorageTest is RhinestoneModuleKit, Test {
         address recover =
             ECDSA.recover(ECDSA.toEthSignedMessageHash(userOpData.userOpHash), signature);
         assertEq(recover, owner.addr);
-        signature = abi.encodePacked(address(ownableValidator), signature);
         userOpData.userOp.signature = signature;
         userOpData.execUserOps();
     }
@@ -180,12 +194,11 @@ contract ColdStorageTest is RhinestoneModuleKit, Test {
     }
 
     function _execWithdraw(IERC7579Execution.Execution memory exec) internal {
-        UserOpData memory userOpData = coldStorage.getExecOps(
+        UserOpData memory userOpData = mainAccount.getExecOps(
             exec.target, exec.value, exec.callData, address(ownableValidator)
         );
         bytes memory signature = signHash(owner.key, userOpData.userOpHash);
-        // encode ownableValidator for ERC1271
-        userOpData.userOp.signature = abi.encodePacked(address(ownableValidator), signature);
+        userOpData.userOp.signature = signature;
         userOpData.execUserOps();
     }
 
@@ -206,7 +219,7 @@ contract ColdStorageTest is RhinestoneModuleKit, Test {
 
     function test_setWaitPeriod() public {
         IERC7579Execution.Execution memory action = IERC7579Execution.Execution({
-            target: address(coldStorageHook),
+            target: address(coldStorage.account),
             value: 0,
             callData: abi.encodeWithSelector(ColdStorageHook.setWaitPeriod.selector, (2 days))
         });
