@@ -14,7 +14,7 @@
     "@openzeppelin/contracts": "5.0.1"
   },
   "devDependencies": {
-    "@rhinestone/modulekit": "link:../modulekitV2",
+    "@rhinestone/modulekit": "github:rhinestonewtf/modulekit#dev",
     "@rhinestone/sessionkeymanager": "github:rhinestonewtf/sessionkeymanager",
     "account-abstraction": "github:eth-infinitism/account-abstraction#develop",
     "ds-test": "github:dapphub/ds-test",
