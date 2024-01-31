@@ -5,6 +5,7 @@ import { IFallbackMethod } from "modulekit/core/ExtensibleFallbackHandler.sol";
 
 import { ERC7579ExecutorBase } from "modulekit/Modules.sol";
 import "./interfaces/Flashloan.sol";
+import { EncodedModuleTypes, ModuleTypeLib, ModuleType } from "umsa/lib/ModuleTypeLib.sol";
 
 contract FlashloanCallback is IFallbackMethod, ERC7579ExecutorBase {
     address immutable FALLBACK_HANDLER;
@@ -77,15 +78,19 @@ contract FlashloanCallback is IFallbackMethod, ERC7579ExecutorBase {
 
     function onUninstall(bytes calldata data) external override { }
 
-    function version() external pure virtual override returns (string memory) {
+    function version() external pure virtual returns (string memory) {
         return "1.0.0";
     }
 
-    function name() external pure virtual override returns (string memory) {
+    function name() external pure virtual returns (string memory) {
         return "FlashloanCallback";
     }
 
     function isModuleType(uint256 isType) external pure virtual override returns (bool) {
         return isType == TYPE_EXECUTOR;
     }
+
+    function getModuleTypes() external view returns (EncodedModuleTypes) { }
+
+    function isInitialized(address smartAccount) external view returns (bool) { }
 }

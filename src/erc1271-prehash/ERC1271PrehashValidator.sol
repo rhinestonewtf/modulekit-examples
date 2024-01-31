@@ -4,6 +4,7 @@ pragma solidity ^0.8.19;
 
 import { ERC7579ValidatorBase, UserOperation } from "modulekit/modules/ERC7579ValidatorBase.sol";
 import { EnumerableSet } from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
+import { EncodedModuleTypes, ModuleTypeLib, ModuleType } from "umsa/lib/ModuleTypeLib.sol";
 
 contract ERC1271PrehashValidator is ERC7579ValidatorBase {
     using EnumerableSet for EnumerableSet.Bytes32Set;
@@ -53,17 +54,21 @@ contract ERC1271PrehashValidator is ERC7579ValidatorBase {
         }
     }
 
-    function version() external pure virtual override returns (string memory) {
+    function version() external pure virtual returns (string memory) {
         return "1.0.0";
     }
 
-    function name() external pure virtual override returns (string memory) {
+    function name() external pure virtual returns (string memory) {
         return "ERC1271PrehashValidator";
     }
 
     function isModuleType(uint256 isType) external pure virtual override returns (bool) {
         return isType == TYPE_VALIDATOR;
     }
+
+    function getModuleTypes() external view returns (EncodedModuleTypes) { }
+
+    function isInitialized(address smartAccount) external view returns (bool) { }
 
     function onInstall(bytes calldata data) external override {
         if (data.length == 0) return;

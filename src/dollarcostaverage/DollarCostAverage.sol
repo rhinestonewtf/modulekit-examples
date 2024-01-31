@@ -4,8 +4,11 @@ pragma solidity ^0.8.23;
 import "modulekit/core/sessionKey/ISessionValidationModule.sol";
 import { IERC20 } from "forge-std/interfaces/IERC20.sol";
 import { UniswapV3Integration } from "modulekit/integrations/uniswap/v3/Uniswap.sol";
-import { IERC7579Execution } from "modulekit/Accounts.sol";
+import { Execution, IERC7579Account } from "modulekit/Accounts.sol";
 import { ERC7579ExecutorBase } from "modulekit/Modules.sol";
+import { ModeLib } from "umsa/lib/ModeLib.sol";
+import { ExecutionLib } from "umsa/lib/ExecutionLib.sol";
+import { EncodedModuleTypes, ModuleTypeLib, ModuleType } from "umsa/lib/ModuleTypeLib.sol";
 
 contract DollarCostAverage is ERC7579ExecutorBase, ISessionValidationModule {
     struct ScopedAccess {
@@ -36,9 +39,9 @@ contract DollarCostAverage is ERC7579ExecutorBase, ISessionValidationModule {
     mapping(address account => mapping(address token => SpentLog)) internal _log;
 
     function dca(Params calldata params) external {
-        IERC7579Execution smartAccount = IERC7579Execution(msg.sender);
+        IERC7579Account smartAccount = IERC7579Account(msg.sender);
 
-        IERC7579Execution.Execution[] memory executions = UniswapV3Integration.approveAndSwap({
+        Execution[] memory executions = UniswapV3Integration.approveAndSwap({
             smartAccount: msg.sender,
             tokenIn: IERC20(params.tokenIn),
             tokenOut: IERC20(params.tokenOut),
@@ -48,7 +51,9 @@ contract DollarCostAverage is ERC7579ExecutorBase, ISessionValidationModule {
 
         _log[msg.sender][params.tokenIn].spent += params.amount;
 
-        smartAccount.executeBatchFromExecutor(executions);
+        smartAccount.executeFromExecutor(
+            ModeLib.encodeSimpleBatch(), ExecutionLib.encodeBatch(executions)
+        );
     }
 
     function validateSessionParams(
@@ -113,11 +118,15 @@ contract DollarCostAverage is ERC7579ExecutorBase, ISessionValidationModule {
         return typeID == TYPE_EXECUTOR;
     }
 
-    function name() external pure virtual override returns (string memory) {
+    function getModuleTypes() external view returns (EncodedModuleTypes) { }
+
+    function isInitialized(address smartAccount) external view returns (bool) { }
+
+    function name() external pure virtual returns (string memory) {
         return "DollarCostAverage";
     }
 
-    function version() external pure virtual override returns (string memory) {
+    function version() external pure virtual returns (string memory) {
         return "0.0.1";
     }
 }

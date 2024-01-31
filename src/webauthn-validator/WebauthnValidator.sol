@@ -4,6 +4,7 @@ pragma solidity >=0.8.19;
 import { WebAuthnLib } from "./utils/WebAuthnLib.sol";
 import { ERC7579ValidatorBase } from "modulekit/Modules.sol";
 import { UserOperation, UserOperationLib } from "modulekit/external/ERC4337.sol";
+import { EncodedModuleTypes, ModuleTypeLib, ModuleType } from "umsa/lib/ModuleTypeLib.sol";
 
 struct PassKeyId {
     uint256 pubKeyX;
@@ -85,15 +86,19 @@ contract WebAuthnValidator is ERC7579ValidatorBase {
         return EIP1271_FAILED;
     }
 
-    function name() external pure override returns (string memory) {
+    function name() external pure returns (string memory) {
         return "WebAuthnValidator";
     }
 
-    function version() external pure override returns (string memory) {
+    function version() external pure returns (string memory) {
         return "0.0.1";
     }
 
     function isModuleType(uint256 typeID) external pure override returns (bool) {
         return typeID == TYPE_VALIDATOR;
     }
+
+    function getModuleTypes() external view returns (EncodedModuleTypes) { }
+
+    function isInitialized(address smartAccount) external view returns (bool) { }
 }

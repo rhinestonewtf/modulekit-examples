@@ -1,28 +1,23 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
-import { IERC7579Execution } from "modulekit/Accounts.sol";
+import { IERC7579Account } from "modulekit/Accounts.sol";
 import { ERC7579ExecutorBase } from "modulekit/Modules.sol";
+import { ModeLib } from "umsa/lib/ModeLib.sol";
+import { ExecutionLib } from "umsa/lib/ExecutionLib.sol";
+import { EncodedModuleTypes, ModuleTypeLib, ModuleType } from "umsa/lib/ModuleTypeLib.sol";
 
 contract ColdStorageExecutor is ERC7579ExecutorBase {
     error UnauthorizedAccess();
 
     mapping(address subAccount => address owner) private _subAccountOwner;
 
-    function executeOnSubAccount(
-        address subAccount,
-        address target,
-        uint256 value,
-        bytes calldata callData
-    )
-        external
-        payable
-    {
+    function executeOnSubAccount(address subAccount, bytes calldata callData) external payable {
         if (msg.sender != _subAccountOwner[subAccount]) {
             revert UnauthorizedAccess();
         }
 
-        IERC7579Execution(subAccount).executeFromExecutor(target, value, callData);
+        IERC7579Account(subAccount).executeFromExecutor(ModeLib.encodeSimpleSingle(), callData);
     }
 
     function onInstall(bytes calldata data) external override {
@@ -30,7 +25,7 @@ contract ColdStorageExecutor is ERC7579ExecutorBase {
         _subAccountOwner[msg.sender] = owner;
     }
 
-    function onUninstall(bytes calldata data) external override {
+    function onUninstall(bytes calldata) external override {
         delete _subAccountOwner[msg.sender];
     }
 
@@ -38,11 +33,9 @@ contract ColdStorageExecutor is ERC7579ExecutorBase {
         return typeID == TYPE_EXECUTOR;
     }
 
-    function name() external pure virtual override returns (string memory) {
-        return "ColdStorageExecutor";
-    }
+    function getModuleTypes() external view returns (EncodedModuleTypes) { }
 
-    function version() external pure virtual override returns (string memory) {
-        return "0.0.1";
+    function isInitialized(address smartAccount) external view returns (bool) {
+        return _subAccountOwner[smartAccount] != address(0);
     }
 }

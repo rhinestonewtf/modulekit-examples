@@ -14,7 +14,7 @@ import "modulekit/Mocks.sol";
 import { Solarray } from "solarray/Solarray.sol";
 import { ECDSA } from "solady/src/utils/ECDSA.sol";
 
-import { IERC7579Execution } from "modulekit/Accounts.sol";
+import { IERC7579Account, Execution } from "modulekit/Accounts.sol";
 import { FlashloanCallback } from "src/coldstorage-subaccount/FlashloanCallback.sol";
 import { FlashloanLender } from "src/coldstorage-subaccount/FlashloanLender.sol";
 import { ColdStorageHook } from "src/coldstorage-subaccount/ColdStorageHook.sol";
@@ -24,6 +24,7 @@ import { OwnableValidator } from "src/ownable-validator/OwnableValidator.sol";
 import { ERC7579BootstrapConfig } from "modulekit/external/ERC7579.sol";
 
 import "src/coldstorage-subaccount/interfaces/Flashloan.sol";
+import "umsa/lib/ExecutionLib.sol";
 
 contract ColdStorageTest is RhinestoneModuleKit, Test {
     using ModuleKitHelpers for *;
@@ -165,25 +166,21 @@ contract ColdStorageTest is RhinestoneModuleKit, Test {
         token.transfer(coldStorage.account, 1 ether);
     }
 
-    function _requestWithdraw(
-        IERC7579Execution.Execution memory exec,
-        uint256 additionalDelay
-    )
-        internal
-    {
+    function _requestWithdraw(Execution memory exec, uint256 additionalDelay) internal {
+        bytes memory _exec = ExecutionLib.encodeSingle(exec.target, exec.value, exec.callData);
+        bytes memory subAccountCallData = ExecutionLib.encodeSingle(
+            address(coldStorageHook),
+            0,
+            abi.encodeWithSelector(
+                ColdStorageHook.requestTimelockedExecution.selector, _exec, additionalDelay
+            )
+        );
         UserOpData memory userOpData = mainAccount.getExecOps({
             target: address(coldStorageExecutor),
             value: 0,
             callData: abi.encodeCall(
                 ColdStorageExecutor.executeOnSubAccount,
-                (
-                    address(coldStorage.account),
-                    address(coldStorageHook),
-                    0,
-                    abi.encodeWithSelector(
-                        ColdStorageHook.requestTimelockedExecution.selector, exec, additionalDelay
-                        )
-                )
+                (address(coldStorage.account), subAccountCallData)
                 ),
             txValidator: address(ownableValidator)
         });
@@ -196,7 +193,7 @@ contract ColdStorageTest is RhinestoneModuleKit, Test {
         userOpData.execUserOps();
     }
 
-    function _deplySubAccount() private {
+    function _deploySubAccount() private {
         // create and exec an empty user op to deploy the sub account
         UserOpData memory userOpData =
             coldStorage.getExecOps(address(0), 0, "", address(ownableValidator));
@@ -204,6 +201,7 @@ contract ColdStorageTest is RhinestoneModuleKit, Test {
         bytes memory signature = signHash(owner.key, userOpData.userOpHash);
         signature = abi.encodePacked(address(ownableValidator), signature);
         userOpData.userOp.signature = signature;
+        coldStorage.expect4337Revert();
         userOpData.execUserOps();
     }
 
@@ -212,13 +210,16 @@ contract ColdStorageTest is RhinestoneModuleKit, Test {
         return abi.encodePacked(r, s, v);
     }
 
-    function _execWithdraw(IERC7579Execution.Execution memory exec) internal {
+    function _execWithdraw(Execution memory exec) internal {
         UserOpData memory userOpData = mainAccount.getExecOps({
             target: address(coldStorageExecutor),
             value: 0,
             callData: abi.encodeCall(
                 ColdStorageExecutor.executeOnSubAccount,
-                (address(coldStorage.account), exec.target, exec.value, exec.callData)
+                (
+                    address(coldStorage.account),
+                    ExecutionLib.encodeSingle(exec.target, exec.value, exec.callData)
+                )
                 ),
             txValidator: address(ownableValidator)
         });
@@ -231,9 +232,9 @@ contract ColdStorageTest is RhinestoneModuleKit, Test {
         uint256 prevBalance = token.balanceOf(address(mainAccount.account));
         uint256 amountToWithdraw = 100;
 
-        _deplySubAccount();
+        _deploySubAccount();
 
-        IERC7579Execution.Execution memory action = IERC7579Execution.Execution({
+        Execution memory action = Execution({
             target: address(token),
             value: 0,
             callData: abi.encodeWithSelector(
@@ -251,11 +252,11 @@ contract ColdStorageTest is RhinestoneModuleKit, Test {
     }
 
     function test_setWaitPeriod() public {
-        _deplySubAccount();
+        _deploySubAccount();
 
         uint256 newWaitPeriod = 2 days;
 
-        IERC7579Execution.Execution memory action = IERC7579Execution.Execution({
+        Execution memory action = Execution({
             target: address(coldStorageHook),
             value: 0,
             callData: abi.encodeWithSelector(ColdStorageHook.setWaitPeriod.selector, (newWaitPeriod))
@@ -266,7 +267,7 @@ contract ColdStorageTest is RhinestoneModuleKit, Test {
         vm.warp(block.timestamp + 8 days);
         _execWithdraw(action);
 
-        IERC7579Execution.Execution memory newAction = IERC7579Execution.Execution({
+        Execution memory newAction = Execution({
             target: address(token),
             value: 0,
             callData: abi.encodeWithSelector(

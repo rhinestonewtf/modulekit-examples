@@ -11,3 +11,4 @@ solarray/=node_modules/solarray/src/
 @openzeppelin/=node_modules/@openzeppelin/
 @rhinestone/modulekit/=node_modules/@rhinestone/modulekit/src/
 @rhinestone/sessionkeymanager/=node_modules/@rhinestone/sessionkeymanager/src/
+umsa/=node_modules/micro-msa/src/

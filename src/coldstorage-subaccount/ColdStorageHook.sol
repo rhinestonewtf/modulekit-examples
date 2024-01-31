@@ -7,7 +7,10 @@ import { IERC20 } from "forge-std/interfaces/IERC20.sol";
 
 import { EnumerableMap } from "@openzeppelin/contracts/utils/structs/EnumerableMap.sol";
 import { ERC7579HookDestruct } from "modulekit/modules/ERC7579HookDestruct.sol";
-import { IERC7579Execution } from "modulekit/Accounts.sol";
+import { Execution } from "modulekit/Accounts.sol";
+import { EncodedModuleTypes, ModuleTypeLib, ModuleType } from "umsa/lib/ModuleTypeLib.sol";
+
+import "forge-std/console2.sol";
 
 contract ColdStorageHook is ERC7579HookDestruct {
     error UnsupportedExecution();
@@ -58,7 +61,7 @@ contract ColdStorageHook is ERC7579HookDestruct {
      * requests an execution to happen in the future
      */
     function requestTimelockedExecution(
-        IERC7579Execution.Execution calldata _exec,
+        Execution calldata _exec,
         uint256 additionalWait
     )
         external
@@ -160,7 +163,7 @@ contract ColdStorageHook is ERC7579HookDestruct {
 
     function onExecuteBatch(
         address msgSender,
-        IERC7579Execution.Execution[] calldata
+        Execution[] calldata
     )
         internal
         virtual
@@ -182,6 +185,7 @@ contract ColdStorageHook is ERC7579HookDestruct {
         returns (bytes memory hookData)
     {
         bytes4 functionSig = bytes4(callData[0:4]);
+        console2.logBytes(callData);
 
         // check if call is a requestTimelockedExecution
         if (target == address(this) && functionSig == this.requestTimelockedExecution.selector) {
@@ -203,7 +207,7 @@ contract ColdStorageHook is ERC7579HookDestruct {
 
     function onExecuteBatchFromExecutor(
         address msgSender,
-        IERC7579Execution.Execution[] calldata
+        Execution[] calldata
     )
         internal
         virtual
@@ -213,10 +217,11 @@ contract ColdStorageHook is ERC7579HookDestruct {
         revert UnsupportedExecution();
     }
 
-    function onInstallExecutor(
+    function onInstallModule(
         address msgSender,
-        address executor,
-        bytes calldata callData
+        uint256 moduleType,
+        address module,
+        bytes calldata initData
     )
         internal
         virtual
@@ -226,62 +231,11 @@ contract ColdStorageHook is ERC7579HookDestruct {
         revert UnsupportedExecution();
     }
 
-    function onUninstallExecutor(
+    function onUninstallModule(
         address msgSender,
-        address executor,
-        bytes calldata callData
-    )
-        internal
-        virtual
-        override
-        returns (bytes memory hookData)
-    {
-        revert UnsupportedExecution();
-    }
-
-    function onInstallValidator(
-        address msgSender,
-        address validator,
-        bytes calldata callData
-    )
-        internal
-        virtual
-        override
-        returns (bytes memory hookData)
-    {
-        revert UnsupportedExecution();
-    }
-
-    function onUninstallValidator(
-        address msgSender,
-        address validator,
-        bytes calldata callData
-    )
-        internal
-        virtual
-        override
-        returns (bytes memory hookData)
-    {
-        revert UnsupportedExecution();
-    }
-
-    function onUninstallHook(
-        address msgSender,
-        address hookModule,
-        bytes calldata callData
-    )
-        internal
-        virtual
-        override
-        returns (bytes memory hookData)
-    {
-        revert UnsupportedExecution();
-    }
-
-    function onInstallHook(
-        address msgSender,
-        address hookModule,
-        bytes calldata callData
+        uint256 moduleType,
+        address module,
+        bytes calldata deInitData
     )
         internal
         virtual
@@ -295,15 +249,19 @@ contract ColdStorageHook is ERC7579HookDestruct {
         return vaultConfig[subAccount].waitPeriod;
     }
 
-    function version() external pure virtual override returns (string memory) {
+    function version() external pure virtual returns (string memory) {
         return "1.0.0";
     }
 
-    function name() external pure virtual override returns (string memory) {
+    function name() external pure virtual returns (string memory) {
         return "ColdStorageHook";
     }
 
     function isModuleType(uint256 isType) external pure virtual override returns (bool) {
         return isType == TYPE_HOOK;
     }
+
+    function getModuleTypes() external view returns (EncodedModuleTypes) { }
+
+    function isInitialized(address smartAccount) external view returns (bool) { }
 }
