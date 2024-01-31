@@ -14,8 +14,8 @@ dependencies:
 
 devDependencies:
   '@rhinestone/modulekit':
-    specifier: link:../modulekit
-    version: link:../modulekit
+    specifier: github:rhinestonewtf/modulekit#dev
+    version: github.com/rhinestonewtf/modulekit/4d2a1b512a99567601d7497595819c018b400cd9
   '@rhinestone/sessionkeymanager':
     specifier: github:rhinestonewtf/sessionkeymanager
     version: github.com/rhinestonewtf/sessionkeymanager/100f86b662bc16fbd7df374cd665a35c10f3a7b6
@@ -4060,6 +4060,14 @@ packages:
     resolution: {tarball: https://codeload.github.com/foundry-rs/forge-std/tar.gz/4513bc2063f23c57bee6558799584b518d387a39}
     name: forge-std
     version: 1.7.6
+    dev: true
+
+  github.com/rhinestonewtf/modulekit/4d2a1b512a99567601d7497595819c018b400cd9:
+    resolution: {tarball: https://codeload.github.com/rhinestonewtf/modulekit/tar.gz/4d2a1b512a99567601d7497595819c018b400cd9}
+    name: '@rhinestone/modulekit'
+    version: 0.3.1
+    dependencies:
+      '@openzeppelin/contracts': 5.0.1
     dev: true
 
   github.com/rhinestonewtf/sessionkeymanager/100f86b662bc16fbd7df374cd665a35c10f3a7b6:

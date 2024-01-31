@@ -15,7 +15,7 @@
     "micro-msa": "github:erc7579/uMSA"
   },
   "devDependencies": {
-    "@rhinestone/modulekit": "link:../modulekit",
+    "@rhinestone/modulekit": "github:rhinestonewtf/modulekit#dev",
     "@rhinestone/sessionkeymanager": "github:rhinestonewtf/sessionkeymanager",
     "account-abstraction": "github:eth-infinitism/account-abstraction#develop",
     "ds-test": "github:dapphub/ds-test",
