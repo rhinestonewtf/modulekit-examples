@@ -10,7 +10,6 @@ abstract contract ScheduledOrders is SchedulingBase {
     function executeOrder(bytes32 executionHash) external override canExecute(executionHash) {
         ExecutionConfig storage executionConfig = executionLog[msg.sender][executionHash];
 
-        IERC7579Execution smartAccount = IERC7579Execution(msg.sender);
 
         // decode from execution tokenIn, tokenOut and amount in
         (address tokenIn, address tokenOut, uint256 amountIn) =
@@ -24,7 +23,7 @@ abstract contract ScheduledOrders is SchedulingBase {
             sqrtPriceLimitX96: 0 // setting zero means no limit for price to execute
          });
 
-        smartAccount.executeBatchFromExecutor(executions);
+        IERC7579Execution(msg.sender).executeBatchFromExecutor(executions);
 
         executionConfig.lastExecutionTime = uint48(block.timestamp);
         executionConfig.numberOfExecutionsCompleted += 1;

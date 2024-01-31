@@ -8,12 +8,11 @@ abstract contract ScheduledTransfers is SchedulingBase {
     function executeOrder(bytes32 executionHash) external override canExecute(executionHash) {
         ExecutionConfig storage executionConfig = executionLog[msg.sender][executionHash];
 
-        IERC7579Execution smartAccount = IERC7579Execution(msg.sender);
 
         IERC7579Execution.Execution memory execution =
             abi.decode(executionConfig.executionData, (IERC7579Execution.Execution));
 
-        smartAccount.executeFromExecutor(execution.target, execution.value, execution.callData);
+        IERC7579Execution(msg.sender).executeFromExecutor(execution.target, execution.value, execution.callData);
 
         executionConfig.lastExecutionTime = uint48(block.timestamp);
         executionConfig.numberOfExecutionsCompleted += 1;
