@@ -72,7 +72,7 @@ abstract contract SchedulingBase is ERC7579ExecutorBase, ISessionValidationModul
     function executeOrder(uint256 jobId) external virtual;
 
     function _createExecution(ExecutionConfig calldata data) internal {
-        uint256 jobId = _accountJobCount[msg.sender];
+        uint256 jobId = _accountJobCount[msg.sender] + 1;
         _accountJobCount[msg.sender]++;
 
         _executionLog[msg.sender][jobId] = ExecutionConfig({
