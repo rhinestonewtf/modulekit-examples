@@ -56,7 +56,7 @@ contract DeadmanSwitch is ERC7579HookBase, ERC7579ValidatorBase {
 
     function isInitialized(address smartAccount) external view returns (bool) { }
 
-    function preCheck(address, uint256, bytes calldata) external returns (bytes memory) {
+    function preCheck(address, bytes calldata) external returns (bytes memory) {
         DeadmanSwitchStorage storage config = _lastAccess[msg.sender];
         config.lastAccess = uint48(block.timestamp);
     }
