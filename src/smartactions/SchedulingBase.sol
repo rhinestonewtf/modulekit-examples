@@ -2,15 +2,12 @@
 pragma solidity ^0.8.23;
 
 import "modulekit/core/sessionKey/ISessionValidationModule.sol";
-import {IERC20} from "forge-std/interfaces/IERC20.sol";
-import {IERC7579Execution} from "modulekit/Accounts.sol";
-import {ERC7579ExecutorBase} from "modulekit/Modules.sol";
+import { IERC20 } from "forge-std/interfaces/IERC20.sol";
+import { IERC7579Execution } from "modulekit/Accounts.sol";
+import { ERC7579ExecutorBase } from "modulekit/Modules.sol";
 import "modulekit/core/sessionKey/ISessionValidationModule.sol";
 
-abstract contract SchedulingBase is
-    ERC7579ExecutorBase,
-    ISessionValidationModule
-{
+abstract contract SchedulingBase is ERC7579ExecutorBase, ISessionValidationModule {
     error InvalidExecution();
     error InvalidMethod(bytes4);
     error InvalidValue();
@@ -24,18 +21,12 @@ abstract contract SchedulingBase is
 
     event ExecutionAdded(address indexed smartAccount, uint128 indexed jobId);
 
-    event ExecutionTriggered(
-        address indexed smartAccount,
-        uint128 indexed jobId
-    );
+    event ExecutionTriggered(address indexed smartAccount, uint128 indexed jobId);
 
-    event ExecutionCancelled(
-        address indexed smartAccount,
-        uint128 indexed jobId
-    );
+    event ExecutionCancelled(address indexed smartAccount, uint128 indexed jobId);
 
-    mapping(address smartAccount => mapping(uint128 jobId => ExecutionConfig))
-        internal _executionLog;
+    mapping(address smartAccount => mapping(uint128 jobId => ExecutionConfig)) internal
+        _executionLog;
 
     mapping(address smartAccount => uint128 jobCount) internal _accountJobCount;
 
@@ -59,25 +50,16 @@ abstract contract SchedulingBase is
     }
 
     function _isExecutionValid(uint128 jobId) internal view {
-        ExecutionConfig storage executionConfig = _executionLog[msg.sender][
-            jobId
-        ];
+        ExecutionConfig storage executionConfig = _executionLog[msg.sender][jobId];
 
         if (!executionConfig.isEnabled) {
             revert InvalidExecution();
         }
 
-        if (
-            executionConfig.lastExecutionTime +
-                executionConfig.executeInterval <
-            block.timestamp
-        ) {
+        if (executionConfig.lastExecutionTime + executionConfig.executeInterval < block.timestamp) {
             revert InvalidExecution();
         }
-        if (
-            executionConfig.numberOfExecutionsCompleted >=
-            executionConfig.numberOfExecutions
-        ) {
+        if (executionConfig.numberOfExecutionsCompleted >= executionConfig.numberOfExecutions) {
             revert InvalidExecution();
         }
         if (executionConfig.startDate > block.timestamp) {
@@ -119,9 +101,7 @@ abstract contract SchedulingBase is
     }
 
     function cancelOrder(uint128 jobId) external {
-        ExecutionConfig storage executionConfig = _executionLog[msg.sender][
-            jobId
-        ];
+        ExecutionConfig storage executionConfig = _executionLog[msg.sender][jobId];
         executionConfig.isEnabled = false;
         emit ExecutionCancelled(msg.sender, jobId);
     }
@@ -132,11 +112,14 @@ abstract contract SchedulingBase is
         bytes calldata callData,
         bytes calldata _sessionKeyData,
         bytes calldata /*_callSpecificData*/
-    ) external view virtual override returns (address) {
-        ExecutorAccess memory access = abi.decode(
-            _sessionKeyData,
-            (ExecutorAccess)
-        );
+    )
+        external
+        view
+        virtual
+        override
+        returns (address)
+    {
+        ExecutorAccess memory access = abi.decode(_sessionKeyData, (ExecutorAccess));
 
         bytes4 targetSelector = bytes4(callData[:4]);
 
@@ -165,10 +148,7 @@ abstract contract SchedulingBase is
             revert InvalidInstall();
         }
 
-        ExecutionConfig memory executionConfig = abi.decode(
-            data,
-            (ExecutionConfig)
-        );
+        ExecutionConfig memory executionConfig = abi.decode(data, (ExecutionConfig));
 
         if (executionConfig.startDate < block.timestamp) {
             revert InvalidExecution();
@@ -196,9 +176,7 @@ abstract contract SchedulingBase is
         _accountJobCount[msg.sender] = 0;
     }
 
-    function isModuleType(
-        uint256 typeID
-    ) external pure override returns (bool) {
+    function isModuleType(uint256 typeID) external pure override returns (bool) {
         return typeID == TYPE_EXECUTOR;
     }
 }
