@@ -4,7 +4,7 @@ pragma solidity ^0.8.19;
 
 import { ERC7579ValidatorBase, UserOperation } from "modulekit/modules/ERC7579ValidatorBase.sol";
 import { EnumerableSet } from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
-import { EncodedModuleTypes, ModuleTypeLib, ModuleType } from "umsa/lib/ModuleTypeLib.sol";
+import { EncodedModuleTypes, ModuleTypeLib, ModuleType } from "erc7579/lib/ModuleTypeLib.sol";
 
 contract ERC1271PrehashValidator is ERC7579ValidatorBase {
     using EnumerableSet for EnumerableSet.Bytes32Set;

@@ -24,7 +24,7 @@ import { OwnableValidator } from "src/ownable-validator/OwnableValidator.sol";
 import { ERC7579BootstrapConfig } from "modulekit/external/ERC7579.sol";
 
 import "src/coldstorage-subaccount/interfaces/Flashloan.sol";
-import "umsa/lib/ExecutionLib.sol";
+import "erc7579/lib/ExecutionLib.sol";
 
 contract ColdStorageTest is RhinestoneModuleKit, Test {
     using ModuleKitHelpers for *;

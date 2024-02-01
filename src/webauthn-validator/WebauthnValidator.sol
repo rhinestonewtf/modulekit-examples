@@ -4,7 +4,7 @@ pragma solidity >=0.8.19;
 import { WebAuthnLib } from "./utils/WebAuthnLib.sol";
 import { ERC7579ValidatorBase } from "modulekit/Modules.sol";
 import { UserOperation, UserOperationLib } from "modulekit/external/ERC4337.sol";
-import { EncodedModuleTypes, ModuleTypeLib, ModuleType } from "umsa/lib/ModuleTypeLib.sol";
+import { EncodedModuleTypes, ModuleTypeLib, ModuleType } from "erc7579/lib/ModuleTypeLib.sol";
 
 struct PassKeyId {
     uint256 pubKeyX;

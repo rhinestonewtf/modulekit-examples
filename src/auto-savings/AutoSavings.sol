@@ -7,7 +7,7 @@ import { IERC4626 } from "forge-std/interfaces/IERC4626.sol";
 import { UniswapV3Integration } from "modulekit/Integrations.sol";
 import { Execution } from "modulekit/Accounts.sol";
 import { ERC7579ExecutorBase, SessionKeyBase } from "modulekit/Modules.sol";
-import { EncodedModuleTypes, ModuleTypeLib, ModuleType } from "umsa/lib/ModuleTypeLib.sol";
+import { EncodedModuleTypes, ModuleTypeLib, ModuleType } from "erc7579/lib/ModuleTypeLib.sol";
 
 import "forge-std/console2.sol";
 

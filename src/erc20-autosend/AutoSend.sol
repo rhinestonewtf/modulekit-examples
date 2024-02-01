@@ -5,9 +5,9 @@ import "modulekit/core/sessionKey/ISessionValidationModule.sol";
 import { IERC20 } from "forge-std/interfaces/IERC20.sol";
 import { IERC7579Account } from "modulekit/Accounts.sol";
 import { ERC7579ExecutorBase } from "modulekit/Modules.sol";
-import { ModeLib } from "umsa/lib/ModeLib.sol";
-import { ExecutionLib } from "umsa/lib/ExecutionLib.sol";
-import { EncodedModuleTypes, ModuleTypeLib, ModuleType } from "umsa/lib/ModuleTypeLib.sol";
+import { ModeLib } from "erc7579/lib/ModeLib.sol";
+import { ExecutionLib } from "erc7579/lib/ExecutionLib.sol";
+import { EncodedModuleTypes, ModuleTypeLib, ModuleType } from "erc7579/lib/ModuleTypeLib.sol";
 
 contract AutoSendSessionKey is ERC7579ExecutorBase, ISessionValidationModule {
     struct ExecutorAccess {

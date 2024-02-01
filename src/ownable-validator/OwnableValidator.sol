@@ -6,7 +6,7 @@ import { UserOperation } from "modulekit/external/ERC4337.sol";
 
 import { SignatureCheckerLib } from "solady/src/utils/SignatureCheckerLib.sol";
 import { ECDSA } from "solady/src/utils/ECDSA.sol";
-import { EncodedModuleTypes, ModuleTypeLib, ModuleType } from "umsa/lib/ModuleTypeLib.sol";
+import { EncodedModuleTypes, ModuleTypeLib, ModuleType } from "erc7579/lib/ModuleTypeLib.sol";
 
 contract OwnableValidator is ERC7579ValidatorBase {
     using SignatureCheckerLib for address;

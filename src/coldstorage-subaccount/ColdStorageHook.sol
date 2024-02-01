@@ -8,7 +8,7 @@ import { IERC20 } from "forge-std/interfaces/IERC20.sol";
 import { EnumerableMap } from "@openzeppelin/contracts/utils/structs/EnumerableMap.sol";
 import { ERC7579HookDestruct } from "modulekit/modules/ERC7579HookDestruct.sol";
 import { Execution } from "modulekit/Accounts.sol";
-import { EncodedModuleTypes, ModuleTypeLib, ModuleType } from "umsa/lib/ModuleTypeLib.sol";
+import { EncodedModuleTypes, ModuleTypeLib, ModuleType } from "erc7579/lib/ModuleTypeLib.sol";
 
 import "forge-std/console2.sol";
 

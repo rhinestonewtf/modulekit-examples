@@ -4,7 +4,7 @@ import "forge-std/interfaces/IERC721.sol";
 import { IFallbackMethod } from "modulekit/core/ExtensibleFallbackHandler.sol";
 import { ERC7579ExecutorBase } from "modulekit/Modules.sol";
 import "./interfaces/Flashloan.sol";
-import { EncodedModuleTypes, ModuleTypeLib, ModuleType } from "umsa/lib/ModuleTypeLib.sol";
+import { EncodedModuleTypes, ModuleTypeLib, ModuleType } from "erc7579/lib/ModuleTypeLib.sol";
 
 pragma solidity ^0.8.20;
 

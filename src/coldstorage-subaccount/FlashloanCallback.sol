@@ -5,7 +5,7 @@ import { IFallbackMethod } from "modulekit/core/ExtensibleFallbackHandler.sol";
 
 import { ERC7579ExecutorBase } from "modulekit/Modules.sol";
 import "./interfaces/Flashloan.sol";
-import { EncodedModuleTypes, ModuleTypeLib, ModuleType } from "umsa/lib/ModuleTypeLib.sol";
+import { EncodedModuleTypes, ModuleTypeLib, ModuleType } from "erc7579/lib/ModuleTypeLib.sol";
 
 contract FlashloanCallback is IFallbackMethod, ERC7579ExecutorBase {
     address immutable FALLBACK_HANDLER;
