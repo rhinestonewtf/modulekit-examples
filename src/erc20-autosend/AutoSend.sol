@@ -3,8 +3,11 @@ pragma solidity ^0.8.23;
 
 import "modulekit/core/sessionKey/ISessionValidationModule.sol";
 import { IERC20 } from "forge-std/interfaces/IERC20.sol";
-import { IERC7579Execution } from "modulekit/Accounts.sol";
+import { IERC7579Account } from "modulekit/Accounts.sol";
 import { ERC7579ExecutorBase } from "modulekit/Modules.sol";
+import { ModeLib } from "erc7579/lib/ModeLib.sol";
+import { ExecutionLib } from "erc7579/lib/ExecutionLib.sol";
+import { EncodedModuleTypes, ModuleTypeLib, ModuleType } from "erc7579/lib/ModuleTypeLib.sol";
 
 contract AutoSendSessionKey is ERC7579ExecutorBase, ISessionValidationModule {
     struct ExecutorAccess {
@@ -41,7 +44,7 @@ contract AutoSendSessionKey is ERC7579ExecutorBase, ISessionValidationModule {
     }
 
     function autoSend(Params calldata params) external {
-        IERC7579Execution smartAccount = IERC7579Execution(msg.sender);
+        IERC7579Account smartAccount = IERC7579Account(msg.sender);
 
         SpentLog storage log = _log[msg.sender][params.token];
 
@@ -52,7 +55,10 @@ contract AutoSendSessionKey is ERC7579ExecutorBase, ISessionValidationModule {
         log.spent = newSpent;
 
         smartAccount.executeFromExecutor(
-            params.token, 0, abi.encodeCall(IERC20.transfer, (params.receiver, params.amount))
+            ModeLib.encodeSimpleSingle(),
+            ExecutionLib.encodeSingle(
+                params.token, 0, abi.encodeCall(IERC20.transfer, (params.receiver, params.amount))
+            )
         );
     }
 
@@ -109,11 +115,15 @@ contract AutoSendSessionKey is ERC7579ExecutorBase, ISessionValidationModule {
         return typeID == TYPE_EXECUTOR;
     }
 
-    function name() external pure virtual override returns (string memory) {
+    function getModuleTypes() external view returns (EncodedModuleTypes) { }
+
+    function isInitialized(address smartAccount) external view returns (bool) { }
+
+    function name() external pure virtual returns (string memory) {
         return "AutoSend";
     }
 
-    function version() external pure virtual override returns (string memory) {
+    function version() external pure virtual returns (string memory) {
         return "0.0.1";
     }
 }

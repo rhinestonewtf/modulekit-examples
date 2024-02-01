@@ -5,8 +5,11 @@ import { ERC20Integration, ERC4626Integration } from "modulekit/Integrations.sol
 import { IERC20 } from "forge-std/interfaces/IERC20.sol";
 import { IERC4626 } from "forge-std/interfaces/IERC4626.sol";
 import { UniswapV3Integration } from "modulekit/Integrations.sol";
-import { IERC7579Execution } from "modulekit/Accounts.sol";
+import { Execution } from "modulekit/Accounts.sol";
 import { ERC7579ExecutorBase, SessionKeyBase } from "modulekit/Modules.sol";
+import { EncodedModuleTypes, ModuleTypeLib, ModuleType } from "erc7579/lib/ModuleTypeLib.sol";
+
+import "forge-std/console2.sol";
 
 contract AutoSavingToVault is ERC7579ExecutorBase, SessionKeyBase {
     struct Params {
@@ -73,7 +76,7 @@ contract AutoSavingToVault is ERC7579ExecutorBase, SessionKeyBase {
         // if underlying asset is not the same as the token, add a swap
         address underlying = vault.asset();
         if (params.token != underlying) {
-            IERC7579Execution.Execution[] memory swap = UniswapV3Integration.approveAndSwap({
+            Execution[] memory swap = UniswapV3Integration.approveAndSwap({
                 smartAccount: msg.sender,
                 tokenIn: IERC20(params.token),
                 tokenOut: IERC20(underlying),
@@ -83,6 +86,7 @@ contract AutoSavingToVault is ERC7579ExecutorBase, SessionKeyBase {
 
             // execute swap on account
             bytes[] memory results = _execute(swap);
+            console2.log("swap results", results.length);
             // get return data of swap, and set it as amountIn.
             // this will be the actual amount that is subject to be saved
             amountIn = abi.decode(results[1], (uint256));
@@ -93,8 +97,7 @@ contract AutoSavingToVault is ERC7579ExecutorBase, SessionKeyBase {
         } // set tokenToSave to params.token since no swap was needed
 
         // approve and deposit to vault
-        IERC7579Execution.Execution[] memory approveAndDeposit =
-            new IERC7579Execution.Execution[](2);
+        Execution[] memory approveAndDeposit = new Execution[](2);
         approveAndDeposit[0] = ERC20Integration.approve(tokenToSave, address(vault), amountIn);
         approveAndDeposit[1] = ERC4626Integration.deposit(vault, amountIn, msg.sender);
 
@@ -135,11 +138,15 @@ contract AutoSavingToVault is ERC7579ExecutorBase, SessionKeyBase {
         return typeID == TYPE_EXECUTOR;
     }
 
-    function name() external pure virtual override returns (string memory) {
+    function getModuleTypes() external view returns (EncodedModuleTypes) { }
+
+    function isInitialized(address smartAccount) external view returns (bool) { }
+
+    function name() external pure virtual returns (string memory) {
         return "AutoSaving";
     }
 
-    function version() external pure virtual override returns (string memory) {
+    function version() external pure virtual returns (string memory) {
         return "0.0.1";
     }
 }

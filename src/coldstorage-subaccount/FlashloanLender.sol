@@ -4,6 +4,7 @@ import "forge-std/interfaces/IERC721.sol";
 import { IFallbackMethod } from "modulekit/core/ExtensibleFallbackHandler.sol";
 import { ERC7579ExecutorBase } from "modulekit/Modules.sol";
 import "./interfaces/Flashloan.sol";
+import { EncodedModuleTypes, ModuleTypeLib, ModuleType } from "erc7579/lib/ModuleTypeLib.sol";
 
 pragma solidity ^0.8.20;
 
@@ -170,15 +171,19 @@ contract FlashloanLender is IFallbackMethod, ERC7579ExecutorBase {
 
     function onUninstall(bytes calldata data) external override { }
 
-    function version() external pure virtual override returns (string memory) {
+    function version() external pure virtual returns (string memory) {
         return "1.0.0";
     }
 
-    function name() external pure virtual override returns (string memory) {
+    function name() external pure virtual returns (string memory) {
         return "FlashloanLender";
     }
 
     function isModuleType(uint256 isType) external pure virtual override returns (bool) {
         return isType == TYPE_EXECUTOR;
     }
+
+    function getModuleTypes() external view returns (EncodedModuleTypes) { }
+
+    function isInitialized(address smartAccount) external view returns (bool) { }
 }

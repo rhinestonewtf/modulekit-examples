@@ -5,6 +5,7 @@ import { ERC7579ValidatorBase, ERC7579HookBase } from "modulekit/Modules.sol";
 import { UserOperation } from "modulekit/ModuleKit.sol";
 import { SignatureCheckerLib } from "solady/src/utils/SignatureCheckerLib.sol";
 import { ECDSA } from "solady/src/utils/ECDSA.sol";
+import { EncodedModuleTypes, ModuleTypeLib, ModuleType } from "erc7579/lib/ModuleTypeLib.sol";
 
 contract DeadmanSwitch is ERC7579HookBase, ERC7579ValidatorBase {
     using SignatureCheckerLib for address;
@@ -39,17 +40,21 @@ contract DeadmanSwitch is ERC7579HookBase, ERC7579ValidatorBase {
         delete _lastAccess[msg.sender];
     }
 
-    function name() external pure override returns (string memory) {
+    function name() external pure returns (string memory) {
         return "DeadmanSwitch";
     }
 
-    function version() external pure override returns (string memory) {
+    function version() external pure returns (string memory) {
         return "0.0.1";
     }
 
     function isModuleType(uint256 typeID) external pure override returns (bool) {
         return typeID == TYPE_HOOK;
     }
+
+    function getModuleTypes() external view returns (EncodedModuleTypes) { }
+
+    function isInitialized(address smartAccount) external view returns (bool) { }
 
     function preCheck(address, bytes calldata) external returns (bytes memory) {
         DeadmanSwitchStorage storage config = _lastAccess[msg.sender];

@@ -10,15 +10,13 @@
   "bugs": {
     "url": "https://github.com/rhinestonewtf/modulekit-examples/issues"
   },
-  "dependencies": {
-    "@openzeppelin/contracts": "5.0.1"
-  },
   "devDependencies": {
+    "@openzeppelin/contracts": "5.0.1",
     "@rhinestone/modulekit": "github:rhinestonewtf/modulekit#dev",
     "@rhinestone/sessionkeymanager": "github:rhinestonewtf/sessionkeymanager",
     "account-abstraction": "github:eth-infinitism/account-abstraction#develop",
     "ds-test": "github:dapphub/ds-test",
-    "erc7579": "github:erc7579/erc7579-implementation#feature/executeUserOp",
+    "erc7579": "github:erc7579/erc7579-implementation",
     "forge-std": "github:foundry-rs/forge-std",
     "prettier": "^2.8.8",
     "sentinellist": "github:zeroknots/sentinellist",

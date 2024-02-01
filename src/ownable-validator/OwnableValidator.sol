@@ -6,6 +6,7 @@ import { UserOperation } from "modulekit/external/ERC4337.sol";
 
 import { SignatureCheckerLib } from "solady/src/utils/SignatureCheckerLib.sol";
 import { ECDSA } from "solady/src/utils/ECDSA.sol";
+import { EncodedModuleTypes, ModuleTypeLib, ModuleType } from "erc7579/lib/ModuleTypeLib.sol";
 
 contract OwnableValidator is ERC7579ValidatorBase {
     using SignatureCheckerLib for address;
@@ -55,15 +56,19 @@ contract OwnableValidator is ERC7579ValidatorBase {
             : EIP1271_FAILED;
     }
 
-    function name() external pure override returns (string memory) {
+    function name() external pure returns (string memory) {
         return "OwnableValidator";
     }
 
-    function version() external pure override returns (string memory) {
+    function version() external pure returns (string memory) {
         return "0.0.1";
     }
 
     function isModuleType(uint256 typeID) external pure override returns (bool) {
         return typeID == TYPE_VALIDATOR;
     }
+
+    function getModuleTypes() external view returns (EncodedModuleTypes) { }
+
+    function isInitialized(address smartAccount) external view returns (bool) { }
 }
