@@ -7,7 +7,7 @@ import { UniswapV3Integration } from "modulekit/Integrations.sol";
 import { IERC20 } from "forge-std/interfaces/IERC20.sol";
 
 abstract contract ScheduledOrders is SchedulingBase {
-    function executeOrder(uint128 jobId) external override canExecute(jobId) {
+    function executeOrder(uint256 jobId) external override canExecute(jobId) {
         ExecutionConfig storage executionConfig = _executionLog[msg.sender][jobId];
 
         // decode from execution tokenIn, tokenOut and amount in

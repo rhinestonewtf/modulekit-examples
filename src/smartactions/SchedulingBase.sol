@@ -19,16 +19,16 @@ abstract contract SchedulingBase is ERC7579ExecutorBase, ISessionValidationModul
 
     error InvalidJob();
 
-    event ExecutionAdded(address indexed smartAccount, uint128 indexed jobId);
+    event ExecutionAdded(address indexed smartAccount, uint256 indexed jobId);
 
-    event ExecutionTriggered(address indexed smartAccount, uint128 indexed jobId);
+    event ExecutionTriggered(address indexed smartAccount, uint256 indexed jobId);
 
-    event ExecutionCancelled(address indexed smartAccount, uint128 indexed jobId);
+    event ExecutionCancelled(address indexed smartAccount, uint256 indexed jobId);
 
-    mapping(address smartAccount => mapping(uint128 jobId => ExecutionConfig)) internal
+    mapping(address smartAccount => mapping(uint256 jobId => ExecutionConfig)) internal
         _executionLog;
 
-    mapping(address smartAccount => uint128 jobCount) internal _accountJobCount;
+    mapping(address smartAccount => uint256 jobCount) internal _accountJobCount;
 
     struct ExecutionConfig {
         uint48 executeInterval;
@@ -42,14 +42,14 @@ abstract contract SchedulingBase is ERC7579ExecutorBase, ISessionValidationModul
 
     struct ExecutorAccess {
         address sessionKeySigner;
-        uint128 jobId;
+        uint256 jobId;
     }
 
     struct Params {
-        uint128 jobId;
+        uint256 jobId;
     }
 
-    function _isExecutionValid(uint128 jobId) internal view {
+    function _isExecutionValid(uint256 jobId) internal view {
         ExecutionConfig storage executionConfig = _executionLog[msg.sender][jobId];
 
         if (!executionConfig.isEnabled) {
@@ -67,16 +67,16 @@ abstract contract SchedulingBase is ERC7579ExecutorBase, ISessionValidationModul
         }
     }
 
-    modifier canExecute(uint128 jobId) {
+    modifier canExecute(uint256 jobId) {
         _isExecutionValid(jobId);
         _;
     }
 
     // abstract methohd to be implemented by the inheriting contract
-    function executeOrder(uint128 jobId) external virtual;
+    function executeOrder(uint256 jobId) external virtual;
 
     function _createExecution(ExecutionConfig calldata data) internal {
-        uint128 jobId = _accountJobCount[msg.sender];
+        uint256 jobId = _accountJobCount[msg.sender];
         _accountJobCount[msg.sender]++;
 
         if (data.startDate < block.timestamp) {
@@ -100,7 +100,7 @@ abstract contract SchedulingBase is ERC7579ExecutorBase, ISessionValidationModul
         _createExecution(executionConfig);
     }
 
-    function cancelOrder(uint128 jobId) external {
+    function cancelOrder(uint256 jobId) external {
         ExecutionConfig storage executionConfig = _executionLog[msg.sender][jobId];
         executionConfig.isEnabled = false;
         emit ExecutionCancelled(msg.sender, jobId);
@@ -154,7 +154,7 @@ abstract contract SchedulingBase is ERC7579ExecutorBase, ISessionValidationModul
             revert InvalidExecution();
         }
 
-        uint128 jobId = _accountJobCount[msg.sender] + 1;
+        uint256 jobId = _accountJobCount[msg.sender] + 1;
         _accountJobCount[msg.sender]++;
 
         _executionLog[msg.sender][jobId] = ExecutionConfig({
@@ -169,8 +169,8 @@ abstract contract SchedulingBase is ERC7579ExecutorBase, ISessionValidationModul
     }
 
     function onUninstall() external {
-        uint128 count = _accountJobCount[msg.sender];
-        for (uint128 i = 1; i <= count; i++) {
+        uint256 count = _accountJobCount[msg.sender];
+        for (uint256 i = 1; i <= count; i++) {
             delete _executionLog[msg.sender][i];
         }
         _accountJobCount[msg.sender] = 0;

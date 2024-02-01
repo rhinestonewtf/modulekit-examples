@@ -5,7 +5,7 @@ import { IERC7579Execution } from "modulekit/Accounts.sol";
 import { SchedulingBase } from "./SchedulingBase.sol";
 
 abstract contract ScheduledTransfers is SchedulingBase {
-    function executeOrder(uint128 jobId) external override canExecute(jobId) {
+    function executeOrder(uint256 jobId) external override canExecute(jobId) {
         ExecutionConfig storage executionConfig = _executionLog[msg.sender][jobId];
 
         IERC7579Execution.Execution memory execution =
