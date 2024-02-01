@@ -23,7 +23,7 @@ abstract contract SchedulingBase is ERC7579ExecutorBase, ISessionValidationModul
 
     event ExecutionTriggered(address indexed smartAccount, uint256 indexed jobId);
 
-    event ExecutionCancelled(address indexed smartAccount, uint256 indexed jobId);
+    event ExecutionStatusUpdated(address indexed smartAccount, uint256 indexed jobId);
 
     mapping(address smartAccount => mapping(uint256 jobId => ExecutionConfig)) internal
         _executionLog;
@@ -42,10 +42,6 @@ abstract contract SchedulingBase is ERC7579ExecutorBase, ISessionValidationModul
 
     struct ExecutorAccess {
         address sessionKeySigner;
-        uint256 jobId;
-    }
-
-    struct Params {
         uint256 jobId;
     }
 
@@ -79,10 +75,6 @@ abstract contract SchedulingBase is ERC7579ExecutorBase, ISessionValidationModul
         uint256 jobId = _accountJobCount[msg.sender];
         _accountJobCount[msg.sender]++;
 
-        if (data.startDate < block.timestamp) {
-            revert InvalidExecution();
-        }
-
         _executionLog[msg.sender][jobId] = ExecutionConfig({
             numberOfExecutionsCompleted: 0,
             isEnabled: true,
@@ -100,10 +92,10 @@ abstract contract SchedulingBase is ERC7579ExecutorBase, ISessionValidationModul
         _createExecution(executionConfig);
     }
 
-    function cancelOrder(uint256 jobId) external {
+    function toggleOrder(uint256 jobId) external {
         ExecutionConfig storage executionConfig = _executionLog[msg.sender][jobId];
-        executionConfig.isEnabled = false;
-        emit ExecutionCancelled(msg.sender, jobId);
+        executionConfig.isEnabled = !executionConfig.isEnabled;
+        emit ExecutionStatusUpdated(msg.sender, jobId);
     }
 
     function validateSessionParams(
@@ -123,12 +115,12 @@ abstract contract SchedulingBase is ERC7579ExecutorBase, ISessionValidationModul
 
         bytes4 targetSelector = bytes4(callData[:4]);
 
-        Params memory params = abi.decode(callData[4:], (Params));
+        uint256 jobId = abi.decode(callData[4:], (uint256));
         if (targetSelector != this.executeOrder.selector) {
             revert InvalidMethod(targetSelector);
         }
 
-        if (params.jobId != access.jobId) {
+        if (jobId != access.jobId) {
             revert InvalidJob();
         }
 
@@ -150,10 +142,6 @@ abstract contract SchedulingBase is ERC7579ExecutorBase, ISessionValidationModul
 
         ExecutionConfig memory executionConfig = abi.decode(data, (ExecutionConfig));
 
-        if (executionConfig.startDate < block.timestamp) {
-            revert InvalidExecution();
-        }
-
         uint256 jobId = _accountJobCount[msg.sender] + 1;
         _accountJobCount[msg.sender]++;
 
@@ -166,6 +154,17 @@ abstract contract SchedulingBase is ERC7579ExecutorBase, ISessionValidationModul
             startDate: executionConfig.startDate,
             executionData: executionConfig.executionData
         });
+    }
+
+    function getAccountJobDetails(
+        address smartAccount,
+        uint256 jobId
+    )
+        external
+        view
+        returns (ExecutionConfig memory)
+    {
+        return _executionLog[smartAccount][jobId];
     }
 
     function onUninstall() external {
