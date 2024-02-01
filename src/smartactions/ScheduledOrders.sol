@@ -1,10 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
-import { IERC7579Execution } from "modulekit/Accounts.sol";
+import { IERC7579Account, Execution } from "modulekit/Accounts.sol";
 import { SchedulingBase } from "./SchedulingBase.sol";
 import { UniswapV3Integration } from "modulekit/Integrations.sol";
 import { IERC20 } from "forge-std/interfaces/IERC20.sol";
+import { ModeLib } from "erc7579/lib/ModeLib.sol";
+import { ExecutionLib } from "erc7579/lib/ExecutionLib.sol";
 
 abstract contract ScheduledOrders is SchedulingBase {
     function executeOrder(uint256 jobId) external override canExecute(jobId) {
@@ -14,7 +16,7 @@ abstract contract ScheduledOrders is SchedulingBase {
         (address tokenIn, address tokenOut, uint256 amountIn, uint160 sqrtPriceLimitX96) =
             abi.decode(executionConfig.executionData, (address, address, uint256, uint160));
 
-        IERC7579Execution.Execution[] memory executions = UniswapV3Integration.approveAndSwap({
+        Execution[] memory executions = UniswapV3Integration.approveAndSwap({
             smartAccount: msg.sender,
             tokenIn: IERC20(tokenIn),
             tokenOut: IERC20(tokenOut),
@@ -25,16 +27,18 @@ abstract contract ScheduledOrders is SchedulingBase {
         executionConfig.lastExecutionTime = uint48(block.timestamp);
         executionConfig.numberOfExecutionsCompleted += 1;
 
-        IERC7579Execution(msg.sender).executeBatchFromExecutor(executions);
+        IERC7579Account(msg.sender).executeFromExecutor(
+            ModeLib.encodeSimpleBatch(), ExecutionLib.encodeBatch(executions)
+        );
 
         emit ExecutionTriggered(msg.sender, jobId);
     }
 
-    function name() external pure virtual override returns (string memory) {
+    function name() external pure virtual returns (string memory) {
         return "Scheduled Orders";
     }
 
-    function version() external pure virtual override returns (string memory) {
+    function version() external pure virtual returns (string memory) {
         return "0.0.1";
     }
 }

@@ -3,9 +3,10 @@ pragma solidity ^0.8.23;
 
 import "modulekit/core/sessionKey/ISessionValidationModule.sol";
 import { IERC20 } from "forge-std/interfaces/IERC20.sol";
-import { IERC7579Execution } from "modulekit/Accounts.sol";
+import { IERC7579Account } from "modulekit/Accounts.sol";
 import { ERC7579ExecutorBase } from "modulekit/Modules.sol";
 import "modulekit/core/sessionKey/ISessionValidationModule.sol";
+import { EncodedModuleTypes } from "erc7579/lib/ModuleTypeLib.sol";
 
 abstract contract SchedulingBase is ERC7579ExecutorBase, ISessionValidationModule {
     error InvalidExecution();
@@ -177,5 +178,11 @@ abstract contract SchedulingBase is ERC7579ExecutorBase, ISessionValidationModul
 
     function isModuleType(uint256 typeID) external pure override returns (bool) {
         return typeID == TYPE_EXECUTOR;
+    }
+
+    function getModuleTypes() external view returns (EncodedModuleTypes) { }
+
+    function isInitialized(address smartAccount) external view returns (bool) {
+        return _accountJobCount[smartAccount] != 0;
     }
 }
