@@ -18,6 +18,8 @@ abstract contract SchedulingBase is
     error InvalidTarget();
     error InvalidRecipient();
 
+    error InvalidInstall();
+
     error InvalidJob();
 
     event ExecutionAdded(address indexed smartAccount, uint128 indexed jobId);
@@ -42,7 +44,6 @@ abstract contract SchedulingBase is
         uint16 numberOfExecutions;
         uint16 numberOfExecutionsCompleted;
         uint48 startDate;
-        uint160 sqrtPriceLimitX96;
         bool isEnabled;
         uint48 lastExecutionTime;
         bytes executionData;
@@ -92,25 +93,29 @@ abstract contract SchedulingBase is
     // abstract methohd to be implemented by the inheriting contract
     function executeOrder(uint128 jobId) external virtual;
 
-    function createExecution(ExecutionConfig calldata data) internal {
-        uint128 jobId = _accountJobCount[msg.sender] + 1;
+    function _createExecution(ExecutionConfig calldata data) internal {
+        uint128 jobId = _accountJobCount[msg.sender];
+        _accountJobCount[msg.sender]++;
+
+        if (data.startDate < block.timestamp) {
+            revert InvalidExecution();
+        }
 
         _executionLog[msg.sender][jobId] = ExecutionConfig({
-            numberOfExecutionsCompleted: data.numberOfExecutionsCompleted,
+            numberOfExecutionsCompleted: 0,
+            isEnabled: true,
+            lastExecutionTime: 0,
             executeInterval: data.executeInterval,
             numberOfExecutions: data.numberOfExecutions,
             startDate: data.startDate,
-            isEnabled: true,
-            lastExecutionTime: data.lastExecutionTime,
-            executionData: data.executionData,
-            sqrtPriceLimitX96: data.sqrtPriceLimitX96
+            executionData: data.executionData
         });
 
         emit ExecutionAdded(msg.sender, jobId);
     }
 
     function addOrder(ExecutionConfig calldata executionConfig) external {
-        createExecution(executionConfig);
+        _createExecution(executionConfig);
     }
 
     function cancelOrder(uint128 jobId) external {
@@ -127,7 +132,7 @@ abstract contract SchedulingBase is
         bytes calldata callData,
         bytes calldata _sessionKeyData,
         bytes calldata /*_callSpecificData*/
-    ) public virtual override returns (address) {
+    ) external view virtual override returns (address) {
         ExecutorAccess memory access = abi.decode(
             _sessionKeyData,
             (ExecutorAccess)
@@ -156,25 +161,30 @@ abstract contract SchedulingBase is
     }
 
     function onInstall(bytes calldata data) external override {
-        // ToDo: check if module already installed
+        if (_accountJobCount[msg.sender] != 0) {
+            revert InvalidInstall();
+        }
 
         ExecutionConfig memory executionConfig = abi.decode(
             data,
             (ExecutionConfig)
         );
 
+        if (executionConfig.startDate < block.timestamp) {
+            revert InvalidExecution();
+        }
+
         uint128 jobId = _accountJobCount[msg.sender] + 1;
+        _accountJobCount[msg.sender]++;
 
         _executionLog[msg.sender][jobId] = ExecutionConfig({
-            numberOfExecutionsCompleted: executionConfig
-                .numberOfExecutionsCompleted,
+            numberOfExecutionsCompleted: 0,
+            isEnabled: true,
+            lastExecutionTime: 0,
             executeInterval: executionConfig.executeInterval,
             numberOfExecutions: executionConfig.numberOfExecutions,
             startDate: executionConfig.startDate,
-            isEnabled: true,
-            lastExecutionTime: executionConfig.lastExecutionTime,
-            executionData: executionConfig.executionData,
-            sqrtPriceLimitX96: executionConfig.sqrtPriceLimitX96
+            executionData: executionConfig.executionData
         });
     }
 
