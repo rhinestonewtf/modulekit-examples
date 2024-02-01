@@ -9,6 +9,8 @@ import { Execution } from "modulekit/Accounts.sol";
 import { ERC7579ExecutorBase, SessionKeyBase } from "modulekit/Modules.sol";
 import { EncodedModuleTypes, ModuleTypeLib, ModuleType } from "umsa/lib/ModuleTypeLib.sol";
 
+import "forge-std/console2.sol";
+
 contract AutoSavingToVault is ERC7579ExecutorBase, SessionKeyBase {
     struct Params {
         address token;
@@ -84,6 +86,7 @@ contract AutoSavingToVault is ERC7579ExecutorBase, SessionKeyBase {
 
             // execute swap on account
             bytes[] memory results = _execute(swap);
+            console2.log("swap results", results.length);
             // get return data of swap, and set it as amountIn.
             // this will be the actual amount that is subject to be saved
             amountIn = abi.decode(results[1], (uint256));

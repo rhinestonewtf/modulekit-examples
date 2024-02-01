@@ -12,8 +12,8 @@
   },
   "devDependencies": {
     "@openzeppelin/contracts": "5.0.1",
-    "micro-msa": "github:erc7579/uMSA",
     "@rhinestone/modulekit": "github:rhinestonewtf/modulekit#feature/erc7579-mod",
+    "micro-msa": "github:erc7579/uMSA",
     "@rhinestone/sessionkeymanager": "github:rhinestonewtf/sessionkeymanager",
     "account-abstraction": "github:eth-infinitism/account-abstraction#develop",
     "ds-test": "github:dapphub/ds-test",

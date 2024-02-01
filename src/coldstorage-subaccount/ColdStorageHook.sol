@@ -15,6 +15,7 @@ import "forge-std/console2.sol";
 contract ColdStorageHook is ERC7579HookDestruct {
     error UnsupportedExecution();
     error UnauthorizedAccess();
+    error InvalidExecutionHash(bytes32 executionHash);
 
     using EnumerableMap for EnumerableMap.Bytes32ToBytes32Map;
 
@@ -39,6 +40,19 @@ contract ColdStorageHook is ERC7579HookDestruct {
     event ExecutionExecuted(
         address indexed subAccount, address target, uint256 value, bytes callData
     );
+
+    function checkHash(
+        address account,
+        Execution calldata exec
+    )
+        external
+        view
+        returns (bytes32 executionHash, bytes32 entry)
+    {
+        executionHash = _execDigestMemory(exec.target, exec.value, exec.callData);
+        bool success;
+        (success, entry) = executions[account].tryGet(executionHash);
+    }
 
     function _getTokenTxReceiver(bytes calldata callData)
         internal
@@ -66,6 +80,7 @@ contract ColdStorageHook is ERC7579HookDestruct {
     )
         external
     {
+        console2.log("requestTimelockedExecution");
         VaultConfig memory _config = vaultConfig[msg.sender];
         bytes32 executionHash = _execDigest(_exec.target, _exec.value, _exec.callData);
 
@@ -187,6 +202,10 @@ contract ColdStorageHook is ERC7579HookDestruct {
         bytes4 functionSig = bytes4(callData[0:4]);
         console2.logBytes(callData);
 
+        console2.log("request");
+        console2.log(target);
+        console2.logBytes4(functionSig);
+        console2.logBytes4(this.requestTimelockedExecution.selector);
         // check if call is a requestTimelockedExecution
         if (target == address(this) && functionSig == this.requestTimelockedExecution.selector) {
             return abi.encode(this.requestTimelockedExecution.selector);
@@ -194,7 +213,7 @@ contract ColdStorageHook is ERC7579HookDestruct {
             bytes32 executionHash = _execDigestMemory(target, value, callData);
             (bool success, bytes32 entry) = executions[msg.sender].tryGet(executionHash);
 
-            if (!success) revert UnauthorizedAccess();
+            if (!success) revert InvalidExecutionHash(executionHash);
 
             uint256 requestTimeStamp = uint256(entry);
             if (requestTimeStamp > block.timestamp) revert UnauthorizedAccess();
