@@ -12,9 +12,10 @@
   },
   "devDependencies": {
     "@openzeppelin/contracts": "5.0.1",
-    "@rhinestone/modulekit": "github:rhinestonewtf/modulekit",
+    "@rhinestone/modulekit": "link:../modulekit",
     "@rhinestone/sessionkeymanager": "github:rhinestonewtf/sessionkeymanager",
     "account-abstraction": "github:eth-infinitism/account-abstraction#develop",
+    "account-abstraction-v0.6": "github:eth-infinitism/account-abstraction#v0.6.0",
     "ds-test": "github:dapphub/ds-test",
     "erc7579": "github:erc7579/erc7579-implementation",
     "forge-std": "github:foundry-rs/forge-std",
@@ -61,5 +62,9 @@
     "test": "forge test",
     "test:lite": "FOUNDRY_PROFILE=lite forge test",
     "test:optimized": "pnpm run build:optimized && FOUNDRY_PROFILE=test-optimized forge test"
+  },
+  "dependencies": {
+    "@prb/math": "^4.0.2",
+    "erc4337-validation": "github:rhinestonewtf/erc4337-validation"
   }
 }

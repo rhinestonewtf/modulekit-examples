@@ -3,7 +3,7 @@ pragma solidity >=0.8.19;
 
 import { WebAuthnLib } from "./utils/WebAuthnLib.sol";
 import { ERC7579ValidatorBase } from "modulekit/Modules.sol";
-import { UserOperation, UserOperationLib } from "modulekit/external/ERC4337.sol";
+import { PackedUserOperation, UserOperationLib } from "modulekit/external/ERC4337.sol";
 import { EncodedModuleTypes, ModuleTypeLib, ModuleType } from "erc7579/lib/ModuleTypeLib.sol";
 
 struct PassKeyId {
@@ -13,7 +13,7 @@ struct PassKeyId {
 }
 
 contract WebAuthnValidator is ERC7579ValidatorBase {
-    using UserOperationLib for UserOperation;
+    using UserOperationLib for PackedUserOperation;
 
     error NoPassKeyRegisteredForSmartAccount(address smartAccount);
     error AlreadyInitedForSmartAccount(address smartAccount);
@@ -40,7 +40,7 @@ contract WebAuthnValidator is ERC7579ValidatorBase {
     }
 
     function validateUserOp(
-        UserOperation calldata userOp,
+        PackedUserOperation calldata userOp,
         bytes32 userOpHash
     )
         external

@@ -10,8 +10,6 @@ import { ERC7579HookDestruct } from "modulekit/modules/ERC7579HookDestruct.sol";
 import { Execution } from "modulekit/Accounts.sol";
 import { EncodedModuleTypes, ModuleTypeLib, ModuleType } from "erc7579/lib/ModuleTypeLib.sol";
 
-import "forge-std/console2.sol";
-
 contract ColdStorageHook is ERC7579HookDestruct {
     error UnsupportedExecution();
     error UnauthorizedAccess();
@@ -80,7 +78,6 @@ contract ColdStorageHook is ERC7579HookDestruct {
     )
         external
     {
-        console2.log("requestTimelockedExecution");
         VaultConfig memory _config = vaultConfig[msg.sender];
         bytes32 executionHash = _execDigest(_exec.target, _exec.value, _exec.callData);
 
@@ -92,6 +89,10 @@ contract ColdStorageHook is ERC7579HookDestruct {
                 if (bytes4(_exec.callData[0:4]) != this.setWaitPeriod.selector) {
                     revert("Invalid receiver transfer");
                 }
+            }
+        } else {
+            if (_exec.target != _config.owner) {
+                revert("Invalid receiver transfer");
             }
         }
 
@@ -199,18 +200,18 @@ contract ColdStorageHook is ERC7579HookDestruct {
         override
         returns (bytes memory hookData)
     {
-        bytes4 functionSig = bytes4(callData[0:4]);
-        console2.logBytes(callData);
+        bytes4 functionSig;
 
-        console2.log("request");
-        console2.log(target);
-        console2.logBytes4(functionSig);
-        console2.logBytes4(this.requestTimelockedExecution.selector);
+        if (callData.length >= 4) {
+            functionSig = bytes4(callData[0:4]);
+        }
+
         // check if call is a requestTimelockedExecution
         if (target == address(this) && functionSig == this.requestTimelockedExecution.selector) {
             return abi.encode(this.requestTimelockedExecution.selector);
         } else {
-            bytes32 executionHash = _execDigestMemory(target, value, callData);
+            bytes32 executionHash =
+                _execDigestMemory(target, value, callData[0:callData.length - 8]);
             (bool success, bytes32 entry) = executions[msg.sender].tryGet(executionHash);
 
             if (!success) revert InvalidExecutionHash(executionHash);
