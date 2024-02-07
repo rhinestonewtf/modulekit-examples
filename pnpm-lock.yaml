@@ -17,8 +17,8 @@ devDependencies:
     specifier: 5.0.1
     version: 5.0.1
   '@rhinestone/modulekit':
-    specifier: link:../modulekit
-    version: link:../modulekit
+    specifier: github:rhinestonewtf/modulekit
+    version: github.com/rhinestonewtf/modulekit/68727e1f017d5739d45bd62dee2a814b03448835
   '@rhinestone/sessionkeymanager':
     specifier: github:rhinestonewtf/sessionkeymanager
     version: github.com/rhinestonewtf/sessionkeymanager/100f86b662bc16fbd7df374cd665a35c10f3a7b6
@@ -818,7 +818,6 @@ packages:
 
   /@prb/math@4.0.2:
     resolution: {integrity: sha512-kJgqvXR6iyU7+N959RzggSFhBdnRuSDnc/bs8u6MzdWw7aYIUaAr+uMVdpP6Dheypjerd7sfJgFOs19FRFhscg==}
-    dev: false
 
   /@scure/base@1.1.5:
     resolution: {integrity: sha512-Brj9FiG2W1MRQSTB212YVPRrcbjkv48FoZi/u4l/zds/ieRrqsh7aUf6CLwkAq61oKXr/ZlTzlY66gLIj3TFTQ==}
@@ -4144,7 +4143,16 @@ packages:
     dependencies:
       '@openzeppelin/contracts': 5.0.1
       solady: github.com/vectorized/solady/880ab6de8b4ee2ae51517bfd417a79e917675bb2
-    dev: false
+
+  github.com/rhinestonewtf/modulekit/68727e1f017d5739d45bd62dee2a814b03448835:
+    resolution: {tarball: https://codeload.github.com/rhinestonewtf/modulekit/tar.gz/68727e1f017d5739d45bd62dee2a814b03448835}
+    name: '@rhinestone/modulekit'
+    version: 0.3.1
+    dependencies:
+      '@openzeppelin/contracts': 5.0.1
+      '@prb/math': 4.0.2
+      erc4337-validation: github.com/rhinestonewtf/erc4337-validation/bb31e468ad5c86247a12322b2745371563d913d0
+    dev: true
 
   github.com/rhinestonewtf/sessionkeymanager/100f86b662bc16fbd7df374cd665a35c10f3a7b6:
     resolution: {tarball: https://codeload.github.com/rhinestonewtf/sessionkeymanager/tar.gz/100f86b662bc16fbd7df374cd665a35c10f3a7b6}
