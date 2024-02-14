@@ -8,6 +8,7 @@ import { ExtensibleFallbackHandler } from "modulekit/core/ExtensibleFallbackHand
 import { FlashloanCallback } from "src/coldstorage-subaccount/FlashloanCallback.sol";
 import { FlashloanLender } from "src/coldstorage-subaccount/FlashloanLender.sol";
 import { ColdStorageHook } from "src/coldstorage-subaccount/ColdStorageHook.sol";
+import { MultiFactor } from "src/mfa/MultiFactor.sol";
 
 /**
  * @title Deploy
@@ -28,6 +29,7 @@ contract DeployScript is Script {
         FlashloanLender flashloanLender =
             new FlashloanLender{ salt: salt }(address(fallbackHandler));
         ColdStorageHook coldStorageHook = new ColdStorageHook{ salt: salt }();
+        MultiFactor multiFactor = new MultiFactor{ salt: salt }();
 
         vm.stopBroadcast();
     }
