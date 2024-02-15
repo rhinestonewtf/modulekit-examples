@@ -9,6 +9,8 @@ import "solmate/test/utils/mocks/MockERC20.sol";
 import "solmate/test/utils/mocks/MockERC4626.sol";
 import { AutoSavingToVault } from "src/auto-savings/AutoSavings.sol";
 
+import { MODULE_TYPE_EXECUTOR } from "modulekit/external/ERC7579.sol";
+
 import "forge-std/console2.sol";
 
 contract AutoSavingsTest is RhinestoneModuleKit, Test {
@@ -16,7 +18,7 @@ contract AutoSavingsTest is RhinestoneModuleKit, Test {
     using ModuleKitSCM for *;
     using ModuleKitUserOp for *;
 
-    RhinestoneAccount internal instance;
+    AccountInstance internal instance;
     AutoSavingToVault internal autosavings;
 
     MockERC20 internal tokenIn;
@@ -31,7 +33,7 @@ contract AutoSavingsTest is RhinestoneModuleKit, Test {
     bytes32 internal sessionKeyDigest;
 
     function setUp() public {
-        instance = makeRhinestoneAccount("instance");
+        instance = makeAccountInstance("instance");
         vm.warp(17_999_999);
 
         autosavings = new AutoSavingToVault();
@@ -66,7 +68,11 @@ contract AutoSavingsTest is RhinestoneModuleKit, Test {
             vault: address(vault2),
             sqrtPriceLimitX96: 0
         });
-        instance.installExecutor(address(autosavings));
+        instance.installModule({
+            moduleTypeId: MODULE_TYPE_EXECUTOR,
+            module: address(autosavings),
+            data: ""
+        });
         vm.prank(instance.account);
         autosavings.setConfig({ token: address(tokenIn), config: savingForToken });
     }

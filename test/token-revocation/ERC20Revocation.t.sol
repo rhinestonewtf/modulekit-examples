@@ -19,7 +19,7 @@ contract ERC20RevocationTest is RhinestoneModuleKit, Test {
     using ModuleKitUserOp for *;
     using ModuleKitSCM for *;
 
-    RhinestoneAccount internal instance;
+    AccountInstance internal instance;
 
     ERC20Revocation internal sessionValidator;
     bytes32 internal sessionValidatorDigest;
@@ -32,7 +32,7 @@ contract ERC20RevocationTest is RhinestoneModuleKit, Test {
     uint256 keySignerPk1;
 
     function setUp() public {
-        instance = makeRhinestoneAccount("1");
+        instance = makeAccountInstance("1");
         vm.deal(instance.account, 1 ether);
 
         token = new MockERC20();

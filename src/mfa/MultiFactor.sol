@@ -313,8 +313,8 @@ contract MultiFactor is ERC7579ValidatorBase, ECDSAFactor {
 
     function onInstall(bytes calldata data) external {
         // check if module is already initialized
-        if (multiFactorConfig[msg.sender].threshold != 0) revert("Already Initialized");
         if (data.length == 0) return;
+        if (multiFactorConfig[msg.sender].threshold != 0) revert("Already Initialized");
 
         // TODO: slice this with packed / calldata
         (

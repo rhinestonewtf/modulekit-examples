@@ -12,6 +12,8 @@ import { SignatureCheckerLib } from "solady/src/utils/SignatureCheckerLib.sol";
 import { ECDSA } from "solady/src/utils/ECDSA.sol";
 import { Solarray } from "solarray/Solarray.sol";
 
+import { MODULE_TYPE_VALIDATOR, MODULE_TYPE_EXECUTOR } from "modulekit/external/ERC7579.sol";
+
 contract DemoValidator is MockValidator {
     mapping(address account => bool isInitialized) public initialized;
 
@@ -35,7 +37,7 @@ contract MultiFactorTest is RhinestoneModuleKit, Test {
     using ModuleKitUserOp for *;
     using ModuleKitSCM for *;
 
-    RhinestoneAccount internal instance;
+    AccountInstance internal instance;
 
     MockTarget internal target;
     MockERC20 internal token;
@@ -50,7 +52,7 @@ contract MultiFactorTest is RhinestoneModuleKit, Test {
     address internal recipient;
 
     function setUp() public {
-        instance = makeRhinestoneAccount("1");
+        instance = makeAccountInstance("1");
         vm.deal(instance.account, 1 ether);
 
         signer = makeAccount("signer");
@@ -71,8 +73,12 @@ contract MultiFactorTest is RhinestoneModuleKit, Test {
     }
 
     function initAccount() internal {
-        instance.installValidator(address(mfa));
-        instance.installExecutor(address(mfa));
+        instance.installModule({
+            moduleTypeId: MODULE_TYPE_VALIDATOR,
+            module: address(mfa),
+            data: ""
+        });
+        instance.installModule({ moduleTypeId: MODULE_TYPE_EXECUTOR, module: address(mfa), data: "" });
         configMFA();
     }
 
@@ -110,8 +116,12 @@ contract MultiFactorTest is RhinestoneModuleKit, Test {
     }
 
     function init_localECDSA() public {
-        instance.installValidator(address(mfa));
-        instance.installExecutor(address(mfa));
+        instance.installModule({
+            moduleTypeId: MODULE_TYPE_VALIDATOR,
+            module: address(mfa),
+            data: ""
+        });
+        instance.installModule({ moduleTypeId: MODULE_TYPE_EXECUTOR, module: address(mfa), data: "" });
         address[] memory validators = Solarray.addresses(address(mfa), address(validator2));
         ECDSAFactor.FactorConfig memory conf = ECDSAFactor.FactorConfig({
             signer: signer.addr,

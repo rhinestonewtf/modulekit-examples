@@ -34,11 +34,11 @@ contract ColdStorageTest is RhinestoneModuleKit, Test {
     MockERC20 internal token;
 
     // main account and dependencies
-    RhinestoneAccount internal mainAccount;
+    AccountInstance internal mainAccount;
     FlashloanCallback internal flashloanCallback;
 
     // ColdStorage Account and dependencies
-    RhinestoneAccount internal coldStorage;
+    AccountInstance internal coldStorage;
     FlashloanLender internal flashloanLender;
     ColdStorageHook internal coldStorageHook;
     ColdStorageExecutor internal coldStorageExecutor;
@@ -101,7 +101,7 @@ contract ColdStorageTest is RhinestoneModuleKit, Test {
         ERC7579BootstrapConfig memory hook = _emptyConfig();
         ERC7579BootstrapConfig memory fallBack =
             _makeBootstrapConfig(address(auxiliary.fallbackHandler), abi.encode(params));
-        mainAccount = makeRhinestoneAccount("mainAccount", validators, executors, hook, fallBack);
+        mainAccount = makeAccountInstance("mainAccount", validators, executors, hook, fallBack);
     }
 
     function _setUpColdstorage() public {
@@ -157,7 +157,7 @@ contract ColdStorageTest is RhinestoneModuleKit, Test {
         ERC7579BootstrapConfig memory fallBack =
             _makeBootstrapConfig(address(auxiliary.fallbackHandler), abi.encode(params));
 
-        coldStorage = makeRhinestoneAccount("coldStorage", validators, executors, hook, fallBack);
+        coldStorage = makeAccountInstance("coldStorage", validators, executors, hook, fallBack);
     }
 
     function simulateDeposit() internal {

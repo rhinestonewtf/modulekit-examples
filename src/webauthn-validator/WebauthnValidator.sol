@@ -57,7 +57,7 @@ contract WebAuthnValidator is ERC7579ValidatorBase {
         ) = abi.decode(userOp.signature, (bytes32, bytes, bytes1, bytes, uint256, uint256[2]));
 
         PassKeyId memory passKey = smartAccountPassKeys[userOp.getSender()];
-        require(passKey.pubKeyY != 0 && passKey.pubKeyY != 0, "Key not found");
+        require(passKey.pubKeyX != 0 && passKey.pubKeyY != 0, "Key not found");
         uint256[2] memory Q = [passKey.pubKeyX, passKey.pubKeyY];
         bool isValidSignature = WebAuthnLib.checkSignature(
             authenticatorData,

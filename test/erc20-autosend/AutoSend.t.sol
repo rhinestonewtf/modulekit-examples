@@ -13,13 +13,14 @@ import "modulekit/Mocks.sol";
 import { AutoSendSessionKey } from "src/erc20-autosend/AutoSend.sol";
 import { SignatureCheckerLib } from "solady/src/utils/SignatureCheckerLib.sol";
 import { Solarray } from "solarray/Solarray.sol";
+import { MODULE_TYPE_EXECUTOR } from "modulekit/external/ERC7579.sol";
 
 contract AutoSendTest is RhinestoneModuleKit, Test {
     using ModuleKitHelpers for *;
     using ModuleKitUserOp for *;
     using ModuleKitSCM for *;
 
-    RhinestoneAccount internal instance;
+    AccountInstance internal instance;
 
     AutoSendSessionKey internal sessionValidator;
     bytes32 internal sessionValidatorDigest;
@@ -32,7 +33,7 @@ contract AutoSendTest is RhinestoneModuleKit, Test {
     uint256 keySignerPk1;
 
     function setUp() public {
-        instance = makeRhinestoneAccount("1");
+        instance = makeAccountInstance("1");
         vm.deal(instance.account, 1 ether);
 
         token = new MockERC20();
@@ -64,7 +65,11 @@ contract AutoSendTest is RhinestoneModuleKit, Test {
         AutoSendSessionKey.SpentLog[] memory logs = new AutoSendSessionKey.SpentLog[](1);
         logs[0] = AutoSendSessionKey.SpentLog({ spent: 0, maxAmount: 100 });
 
-        instance.installExecutor(address(sessionValidator), abi.encode(tokens, logs));
+        instance.installModule({
+            moduleTypeId: MODULE_TYPE_EXECUTOR,
+            module: address(sessionValidator),
+            data: abi.encode(tokens, logs)
+        });
     }
 
     function test_transferBatch() public {
