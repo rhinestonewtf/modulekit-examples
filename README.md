@@ -1,66 +1,27 @@
-## Foundry
+## ModuleKit Examples
 
-**Foundry is a blazing fast, portable and modular toolkit for Ethereum application development written in Rust.**
-
-Foundry consists of:
-
--   **Forge**: Ethereum testing framework (like Truffle, Hardhat and DappTools).
--   **Cast**: Swiss army knife for interacting with EVM smart contracts, sending transactions and getting chain data.
--   **Anvil**: Local Ethereum node, akin to Ganache, Hardhat Network.
--   **Chisel**: Fast, utilitarian, and verbose solidity REPL.
-
-## Documentation
-
-https://book.getfoundry.sh/
+**Example modules built using the [ModuleKit](https://github.com/rhinestonewtf/modulekit)**
 
 ## Usage
 
-### Build
+### Install dependencies
 
 ```shell
-$ forge build
+pnpm install
 ```
 
-### Test
+### Testing modules
 
 ```shell
-$ forge test
+forge test
 ```
 
-### Format
+## Learn more
 
-```shell
-$ forge fmt
-```
+For more information, check out the [ModuleKit documentation](https://docs.rhinestone.wtf/modulekit).
 
-### Gas Snapshots
+## Contributing
 
-```shell
-$ forge snapshot
-```
+For issues or bugs, feel free to open a PR, start a discussion or get in touch with us.
 
-### Anvil
-
-```shell
-$ anvil
-```
-
-### Deploy
-
-```shell
-$ forge script script/Counter.s.sol:CounterScript --rpc-url <your_rpc_url> --private-key <your_private_key>
-```
-
-### Cast
-
-```shell
-$ cast <subcommand>
-```
-
-### Help
-
-```shell
-$ forge --help
-$ anvil --help
-$ cast --help
-```
+For guidance on how to create PRs, see the [CONTRIBUTING](./CONTRIBUTING.md) guide.
