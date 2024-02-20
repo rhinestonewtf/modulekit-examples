@@ -160,6 +160,8 @@ abstract contract SchedulingBase is ERC7579ExecutorBase, ISessionValidationModul
             startDate: startDate,
             executionData: executionData
         });
+
+        emit ExecutionAdded(msg.sender, jobId);
     }
 
     function getAccountJobDetails(
