@@ -141,7 +141,12 @@ abstract contract SchedulingBase is ERC7579ExecutorBase, ISessionValidationModul
             revert InvalidInstall();
         }
 
-        ExecutionConfig memory executionConfig = abi.decode(data, (ExecutionConfig));
+        (
+            uint48 executeInterval,
+            uint16 numberOfExecutions,
+            uint48 startDate,
+            bytes memory executionData
+        ) = abi.decode(data, (uint48, uint16, uint48, bytes));
 
         uint256 jobId = _accountJobCount[msg.sender] + 1;
         _accountJobCount[msg.sender]++;
@@ -150,10 +155,10 @@ abstract contract SchedulingBase is ERC7579ExecutorBase, ISessionValidationModul
             numberOfExecutionsCompleted: 0,
             isEnabled: true,
             lastExecutionTime: 0,
-            executeInterval: executionConfig.executeInterval,
-            numberOfExecutions: executionConfig.numberOfExecutions,
-            startDate: executionConfig.startDate,
-            executionData: executionConfig.executionData
+            executeInterval: executeInterval,
+            numberOfExecutions: numberOfExecutions,
+            startDate: startDate,
+            executionData: executionData
         });
     }
 
@@ -168,7 +173,7 @@ abstract contract SchedulingBase is ERC7579ExecutorBase, ISessionValidationModul
         return _executionLog[smartAccount][jobId];
     }
 
-    function onUninstall() external {
+    function onUninstall(bytes calldata) external {
         uint256 count = _accountJobCount[msg.sender];
         for (uint256 i = 1; i <= count; i++) {
             delete _executionLog[msg.sender][i];
