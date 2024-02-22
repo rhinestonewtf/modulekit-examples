@@ -26,7 +26,7 @@ abstract contract SchedulingBase is ERC7579ExecutorBase, ISessionValidationModul
 
     event ExecutionStatusUpdated(address indexed smartAccount, uint256 indexed jobId);
 
-    event ModuleUninstalled(address indexed smartAccount);
+    event ExecutionsCancelled(address indexed smartAccount);
 
     mapping(address smartAccount => mapping(uint256 jobId => ExecutionConfig)) internal
         _executionLog;
@@ -188,7 +188,7 @@ abstract contract SchedulingBase is ERC7579ExecutorBase, ISessionValidationModul
         }
         _accountJobCount[msg.sender] = 0;
 
-        emit ModuleUninstalled(msg.sender);
+        emit ExecutionsCancelled(msg.sender);
     }
 
     function isModuleType(uint256 typeID) external pure override returns (bool) {
