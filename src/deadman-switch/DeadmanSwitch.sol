@@ -2,7 +2,7 @@
 pragma solidity ^0.8.21;
 
 import { ERC7579ValidatorBase, ERC7579HookBase } from "modulekit/Modules.sol";
-import { UserOperation } from "modulekit/ModuleKit.sol";
+import { PackedUserOperation } from "modulekit/ModuleKit.sol";
 import { SignatureCheckerLib } from "solady/src/utils/SignatureCheckerLib.sol";
 import { ECDSA } from "solady/src/utils/ECDSA.sol";
 import { EncodedModuleTypes, ModuleTypeLib, ModuleType } from "erc7579/lib/ModuleTypeLib.sol";
@@ -66,7 +66,7 @@ contract DeadmanSwitch is ERC7579HookBase, ERC7579ValidatorBase {
     }
 
     function validateUserOp(
-        UserOperation calldata userOp,
+        PackedUserOperation calldata userOp,
         bytes32 userOpHash
     )
         external

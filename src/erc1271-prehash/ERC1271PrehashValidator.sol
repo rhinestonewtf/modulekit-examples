@@ -2,9 +2,10 @@
 
 pragma solidity ^0.8.19;
 
-import { ERC7579ValidatorBase, UserOperation } from "modulekit/modules/ERC7579ValidatorBase.sol";
+import { ERC7579ValidatorBase } from "modulekit/modules/ERC7579ValidatorBase.sol";
 import { EnumerableSet } from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import { EncodedModuleTypes, ModuleTypeLib, ModuleType } from "erc7579/lib/ModuleTypeLib.sol";
+import { PackedUserOperation } from "modulekit/external/ERC4337.sol";
 
 contract ERC1271PrehashValidator is ERC7579ValidatorBase {
     using EnumerableSet for EnumerableSet.Bytes32Set;
@@ -24,7 +25,7 @@ contract ERC1271PrehashValidator is ERC7579ValidatorBase {
     }
 
     function validateUserOp(
-        UserOperation calldata userOp,
+        PackedUserOperation calldata userOp,
         bytes32 userOpHash
     )
         external

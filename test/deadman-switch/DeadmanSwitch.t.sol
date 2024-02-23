@@ -6,6 +6,7 @@ import "modulekit/ModuleKit.sol";
 import "modulekit/Helpers.sol";
 import "modulekit/Core.sol";
 import "solmate/test/utils/mocks/MockERC20.sol";
+import { MODULE_TYPE_VALIDATOR, MODULE_TYPE_HOOK } from "modulekit/external/ERC7579.sol";
 
 import "src/deadman-switch/DeadmanSwitch.sol";
 import "forge-std/interfaces/IERC20.sol";
@@ -15,7 +16,7 @@ contract DeadmanSwitchTest is RhinestoneModuleKit, Test {
     using ModuleKitHelpers for *;
     using ModuleKitUserOp for *;
 
-    RhinestoneAccount internal instance;
+    AccountInstance internal instance;
     DeadmanSwitch internal dms;
 
     Account internal nominee;
@@ -25,7 +26,7 @@ contract DeadmanSwitchTest is RhinestoneModuleKit, Test {
     function setUp() public {
         vm.warp(100);
 
-        instance = makeRhinestoneAccount("Deadman");
+        instance = makeAccountInstance("Deadman");
         nominee = makeAccount("Nominee");
         token = new MockERC20("USDC", "USDC", 18);
         vm.label(address(token), "USDC");
@@ -35,8 +36,12 @@ contract DeadmanSwitchTest is RhinestoneModuleKit, Test {
 
         timeout = uint48(block.timestamp + 128 days);
         bytes memory initData = abi.encode(nominee.addr, timeout);
-        instance.installValidator(address(dms), initData);
-        instance.installHook(address(dms));
+        instance.installModule({
+            moduleTypeId: MODULE_TYPE_VALIDATOR,
+            module: address(dms),
+            data: initData
+        });
+        instance.installModule({ moduleTypeId: MODULE_TYPE_HOOK, module: address(dms), data: "" });
     }
 
     function test_ShouldNeverRevertHook() external {

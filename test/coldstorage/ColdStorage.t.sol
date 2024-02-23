@@ -34,11 +34,11 @@ contract ColdStorageTest is RhinestoneModuleKit, Test {
     MockERC20 internal token;
 
     // main account and dependencies
-    RhinestoneAccount internal mainAccount;
+    AccountInstance internal mainAccount;
     FlashloanCallback internal flashloanCallback;
 
     // ColdStorage Account and dependencies
-    RhinestoneAccount internal coldStorage;
+    AccountInstance internal coldStorage;
     FlashloanLender internal flashloanLender;
     ColdStorageHook internal coldStorageHook;
     ColdStorageExecutor internal coldStorageExecutor;
@@ -77,7 +77,6 @@ contract ColdStorageTest is RhinestoneModuleKit, Test {
         token.initialize("Mock Token", "MTK", 18);
         deal(address(token), mainAccount.account, 100 ether);
 
-        console2.log("owner", owner.addr);
         vm.warp(1_799_999);
 
         mainAccount.exec({
@@ -102,7 +101,7 @@ contract ColdStorageTest is RhinestoneModuleKit, Test {
         ERC7579BootstrapConfig memory hook = _emptyConfig();
         ERC7579BootstrapConfig memory fallBack =
             _makeBootstrapConfig(address(auxiliary.fallbackHandler), abi.encode(params));
-        mainAccount = makeRhinestoneAccount("mainAccount", validators, executors, hook, fallBack);
+        mainAccount = makeAccountInstance("mainAccount", validators, executors, hook, fallBack);
     }
 
     function _setUpColdstorage() public {
@@ -158,7 +157,7 @@ contract ColdStorageTest is RhinestoneModuleKit, Test {
         ERC7579BootstrapConfig memory fallBack =
             _makeBootstrapConfig(address(auxiliary.fallbackHandler), abi.encode(params));
 
-        coldStorage = makeRhinestoneAccount("coldStorage", validators, executors, hook, fallBack);
+        coldStorage = makeAccountInstance("coldStorage", validators, executors, hook, fallBack);
     }
 
     function simulateDeposit() internal {
@@ -166,39 +165,13 @@ contract ColdStorageTest is RhinestoneModuleKit, Test {
         token.transfer(coldStorage.account, 1 ether);
     }
 
-    function _requestWithdraw(Execution memory exec, uint256 additionalDelay) internal {
-        bytes memory subAccountCallData = ExecutionLib.encodeSingle(
-            address(coldStorageHook),
-            0,
-            abi.encodeCall(ColdStorageHook.requestTimelockedExecution, (exec, additionalDelay))
-        );
-
-        console2.log("request selector");
-        console2.logBytes4(ColdStorageHook.requestTimelockedExecution.selector);
-        UserOpData memory userOpData = mainAccount.getExecOps({
-            target: address(coldStorageExecutor),
-            value: 0,
-            callData: abi.encodeCall(
-                ColdStorageExecutor.executeOnSubAccount,
-                (address(coldStorage.account), subAccountCallData)
-                ),
-            txValidator: address(ownableValidator)
-        });
-
-        console2.log("execute on subaccount selector");
-        console2.logBytes4(ColdStorageExecutor.executeOnSubAccount.selector);
-
-        bytes memory signature = signHash(owner.key, userOpData.userOpHash);
-        address recover =
-            ECDSA.recover(ECDSA.toEthSignedMessageHash(userOpData.userOpHash), signature);
-        assertEq(recover, owner.addr);
-        userOpData.userOp.signature = signature;
-        console2.log("exec");
-        userOpData.execUserOps();
-        console2.log("exec");
+    function signHash(uint256 privKey, bytes32 digest) internal returns (bytes memory) {
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(privKey, ECDSA.toEthSignedMessageHash(digest));
+        return abi.encodePacked(r, s, v);
     }
 
     function _deploySubAccount() private {
+        // todo: replace with modulekit function to deploy account
         // create and exec an empty user op to deploy the sub account
         UserOpData memory userOpData =
             coldStorage.getExecOps(address(0), 0, "", address(ownableValidator));
@@ -210,21 +183,45 @@ contract ColdStorageTest is RhinestoneModuleKit, Test {
         userOpData.execUserOps();
     }
 
-    function signHash(uint256 privKey, bytes32 digest) internal returns (bytes memory) {
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(privKey, ECDSA.toEthSignedMessageHash(digest));
-        return abi.encodePacked(r, s, v);
-    }
+    function _requestWithdraw(Execution memory exec, uint256 additionalDelay) internal {
+        bytes memory subAccountCallData = ExecutionLib.encodeSingle(
+            address(coldStorageHook),
+            0,
+            abi.encodeWithSelector(
+                ColdStorageHook.requestTimelockedExecution.selector, exec, additionalDelay
+            )
+        );
 
-    function _execWithdraw(Execution memory exec) internal {
         UserOpData memory userOpData = mainAccount.getExecOps({
             target: address(coldStorageExecutor),
             value: 0,
-            callData: abi.encodeCall(
-                ColdStorageExecutor.executeOnSubAccount,
-                (
-                    address(coldStorage.account),
-                    ExecutionLib.encodeSingle(exec.target, exec.value, exec.callData)
-                )
+            callData: abi.encodeWithSelector(
+                ColdStorageExecutor.executeOnSubAccount.selector,
+                address(coldStorage.account),
+                subAccountCallData
+                ),
+            txValidator: address(ownableValidator)
+        });
+
+        bytes memory signature = signHash(owner.key, userOpData.userOpHash);
+        address recover =
+            ECDSA.recover(ECDSA.toEthSignedMessageHash(userOpData.userOpHash), signature);
+        assertEq(recover, owner.addr);
+        userOpData.userOp.signature = signature;
+        userOpData.execUserOps();
+    }
+
+    function _execWithdraw(Execution memory exec) internal {
+        bytes memory subAccountCallData =
+            ExecutionLib.encodeSingle(exec.target, exec.value, exec.callData);
+
+        UserOpData memory userOpData = mainAccount.getExecOps({
+            target: address(coldStorageExecutor),
+            value: 0,
+            callData: abi.encodeWithSelector(
+                ColdStorageExecutor.executeOnSubAccount.selector,
+                address(coldStorage.account),
+                subAccountCallData
                 ),
             txValidator: address(ownableValidator)
         });
@@ -273,9 +270,6 @@ contract ColdStorageTest is RhinestoneModuleKit, Test {
         (bytes32 hash, bytes32 entry) =
             coldStorageHook.checkHash(address(mainAccount.account), action);
 
-        console2.logBytes32(hash);
-        console2.logBytes32(entry);
-
         vm.warp(block.timestamp + 8 days);
         _execWithdraw(action);
 
@@ -294,5 +288,25 @@ contract ColdStorageTest is RhinestoneModuleKit, Test {
 
         uint256 updatedWaitPeriod = coldStorageHook.getLockTime(address(coldStorage.account));
         assertEq(updatedWaitPeriod, uint128(newWaitPeriod));
+    }
+
+    function test_withdraw__With__NativeToken() public {
+        address target = address(mainAccount.account);
+        uint256 prevBalance = target.balance;
+        uint256 amountToWithdraw = 1 ether;
+
+        vm.deal(address(coldStorage.account), 10 ether);
+        _deploySubAccount();
+
+        Execution memory action =
+            Execution({ target: target, value: amountToWithdraw, callData: "" });
+
+        _requestWithdraw(action, 0);
+
+        vm.warp(block.timestamp + 8 days);
+        _execWithdraw(action);
+
+        uint256 newBalance = target.balance;
+        assertEq(newBalance, prevBalance + amountToWithdraw);
     }
 }
